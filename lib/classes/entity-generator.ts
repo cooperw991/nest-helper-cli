@@ -1,14 +1,14 @@
 import * as R from 'ramda';
 import * as fs from 'fs';
 
-import { EntityJsonInterface } from './interfaces/entity-json.interface';
+import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import {
   humpToLine,
   lineToHump,
   firstUpperCase,
-} from './utils/conversion.util';
+} from '../utils/conversion.util';
 
-export class GenerateEntity {
+export class EntityGenerator {
   constructor(json: EntityJsonInterface) {
     this.data = json;
     this.output = '';
