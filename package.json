@@ -1,0 +1,22 @@
+{
+  "name": "nest-helper-cli",
+  "version": "0.0.1",
+  "description": "nestjs 自动生成模块套件辅助工具",
+  "main": "index.js",
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "nest-helper": "dist/bin/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.2.4"
+  }
+}
