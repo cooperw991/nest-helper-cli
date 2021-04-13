@@ -31,13 +31,9 @@ const sample: EntityJsonInterface = {
         type: 'integer',
         comment: 'Primary gernated column',
       },
-      graphql: {
-        type: 'ID',
-      },
     },
     {
       name: 'column1',
-      decorator: 'Column',
       type: 'string',
       options: {
         type: 'varchar',
@@ -45,8 +41,10 @@ const sample: EntityJsonInterface = {
         nullable: false,
         comment: 'string column1',
       },
-      graphql: {
-        type: 'ID',
+      api: {
+        create: true,
+        update: false,
+        view: false,
       },
     },
     {
@@ -58,9 +56,6 @@ const sample: EntityJsonInterface = {
         length: 10,
         nullable: false,
         comment: 'int column2',
-      },
-      graphql: {
-        type: 'ID',
       },
     },
   ],

@@ -6,4 +6,4 @@ const jsonData = JSON.parse(
 );
 const entityGenerator = new EntityGenerator(jsonData);
 
-entityGenerator.generateEntityFile();
+entityGenerator.generateFiles();

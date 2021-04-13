@@ -10,13 +10,14 @@ interface EntityJsonEnumInterface {
 interface EntityJsonColumnInterface {
   name: string;
   type: string;
-  decorator: string;
-  options: {
+  decorator?: string;
+  options?: {
     [key: string]: any;
   };
-  graphql: {
-    [key: string]: any;
-    type: string;
+  api?: {
+    create?: boolean;
+    update?: boolean;
+    view?: boolean;
   };
 }
 

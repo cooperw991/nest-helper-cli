@@ -1,5 +1,4 @@
 import * as R from 'ramda';
-import * as fs from 'fs';
 
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import {
@@ -7,25 +6,22 @@ import {
   lineToHump,
   firstUpperCase,
 } from '../utils/conversion.util';
+import { BaseGenerator } from './base-generator';
 
-export class EntityGenerator {
+export class EntityGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
+    super();
     this.data = json;
+    this.suffix = 'entity';
     this.output = '';
-  }
-
-  private data;
-  private output;
-
-  public generateEntityFile(): void {
     this.output += this.writeTypeormDependencies();
     this.output += this.writeTypeGraphqlDependencies();
     this.output += this.writeEnums();
-    this.output += this.writeModel();
-    fs.writeFileSync(
-      process.cwd() + '/' + this.data.name + '.entity.ts',
-      this.output,
-    );
+    this.output += this.writeColumns();
+  }
+
+  public generateFiles() {
+    this.writeFile(this.data.name);
   }
 
   private writeTypeormDependencies(): string {
@@ -33,7 +29,7 @@ export class EntityGenerator {
 
     let output = 'import {\n';
 
-    const types = columns.map((col) => col.decorator);
+    const types = columns.map((col) => col.decorator ?? 'Column');
 
     const decorators = R.uniq(types);
 
@@ -83,7 +79,7 @@ export class EntityGenerator {
     return output;
   }
 
-  private writeModel(): string {
+  private writeColumns(): string {
     const { columns, name, prefix, isSoftDelete } = this.data;
 
     let output = '\n@ObjectType()\n';
@@ -97,23 +93,33 @@ export class EntityGenerator {
       let gqlType = '';
       const { options } = col;
 
-      switch (true) {
-        case col.decorator === 'PrimaryGeneratedColumn':
-          gqlType = 'ID';
-          break;
-        case col.type === 'number':
-          gqlType = col.options.type === 'integer' ? 'Int' : 'Number';
-          break;
-        default:
-          gqlType = firstUpperCase(col.type);
-      }
-      output += `  @Field(() => ${gqlType}, {\n    description: '${col.options.comment}',\n  })\n`;
+      if (!R.has('api')(col) || col.api.view) {
+        switch (true) {
+          case col.decorator === 'PrimaryGeneratedColumn':
+            gqlType = 'ID';
+            break;
+          case col.type === 'number':
+            gqlType = col.options.type === 'integer' ? 'Int' : 'Number';
+            break;
+          default:
+            gqlType = firstUpperCase(col.type);
+        }
+        output += `  @Field(() => ${gqlType}, {\n    description: '${col.options.comment}',\n  })\n`;
 
-      output += `  @${col.decorator}(`;
+        output += `  @Field(() => ${gqlType}, {\n    description: '${col.options.comment}',\n`;
+
+        if (col.options && col.options.nullable) {
+          output += `    nullable: true,\n`;
+        }
+
+        output += `  })\n`;
+      }
+
+      const decorator = col.decorator ?? 'Column';
+
+      output += `  @${decorator}(`;
 
       if (!R.isEmpty(options)) {
-        // const optionsStr = JSON.stringify(options).replace(/\"/g, "'");
-
         output += '{\n';
         for (const optKey in options) {
           const value =
