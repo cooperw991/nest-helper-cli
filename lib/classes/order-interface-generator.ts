@@ -57,6 +57,6 @@ export class OrderInterfaceGenerator extends BaseGenerator {
   private writeOrderClass(): string {
     const { orderByDecorator, orderDecorator } = this;
 
-    return `@InputType()\nexport class ${orderDecorator} {\n  @Field(() => ${orderByDecorator})\n  orderBy: ${orderByDecorator};\n\n  @Field({ defaultValue: false })\n  asc: boolean;\n}\n`;
+    return `@InputType()\nexport class ${orderDecorator} {\n  @Field(() => ${orderByDecorator})\n  by: ${orderByDecorator};\n\n  @Field({ defaultValue: false })\n  asc: boolean;\n}\n`;
   }
 }
