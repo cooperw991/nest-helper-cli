@@ -31,6 +31,11 @@ const sample: EntityJsonInterface = {
         type: 'integer',
         comment: 'Primary gernated column',
       },
+      api: {
+        create: false,
+        update: false,
+        view: true,
+      },
     },
     {
       name: 'column1',
@@ -56,6 +61,26 @@ const sample: EntityJsonInterface = {
         length: 10,
         nullable: false,
         comment: 'int column2',
+      },
+    },
+    {
+      name: 'column3',
+      decorator: 'Column',
+      type: 'SampleEnum',
+      options: {
+        comment: 'enum column3',
+      },
+    },
+    {
+      name: 'column4',
+      decorator: 'Column',
+      type: 'number',
+      options: {
+        type: 'integer',
+        length: 10,
+        array: true,
+        default: '{}',
+        comment: 'int array column4',
       },
     },
   ],

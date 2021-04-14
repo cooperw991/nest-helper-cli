@@ -2,7 +2,7 @@ import * as R from 'ramda';
 
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import {
-  humpToLine,
+  humpToUnderscore,
   lineToHump,
   firstUpperCase,
 } from '../utils/conversion.util';
@@ -10,10 +10,8 @@ import { BaseGenerator } from './base-generator';
 
 export class EntityGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
-    super();
-    this.data = json;
+    super(json);
     this.suffix = 'entity';
-    this.output = '';
     this.output += this.writeTypeormDependencies();
     this.output += this.writeTypeGraphqlDependencies();
     this.output += this.writeEnums();
@@ -80,14 +78,11 @@ export class EntityGenerator extends BaseGenerator {
   }
 
   private writeColumns(): string {
-    const { columns, name, prefix, isSoftDelete } = this.data;
+    const { columns, isSoftDelete } = this.data;
 
     let output = '\n@ObjectType()\n';
 
-    const tableName = prefix + humpToLine(name);
-    const entityName = firstUpperCase(lineToHump(name));
-
-    output += `@Entity('${tableName}')\nexport class ${entityName} {\n`;
+    output += `@Entity('${this.tableName}')\nexport class ${this.className} {\n`;
 
     for (const col of columns) {
       let gqlType = '';
@@ -104,7 +99,10 @@ export class EntityGenerator extends BaseGenerator {
           default:
             gqlType = firstUpperCase(col.type);
         }
-        output += `  @Field(() => ${gqlType}, {\n    description: '${col.options.comment}',\n  })\n`;
+
+        if (R.has('options')(col) && col.options.array) {
+          gqlType = `[${gqlType}]`;
+        }
 
         output += `  @Field(() => ${gqlType}, {\n    description: '${col.options.comment}',\n`;
 
@@ -119,6 +117,8 @@ export class EntityGenerator extends BaseGenerator {
 
       output += `  @${decorator}(`;
 
+      let isArray = '';
+
       if (!R.isEmpty(options)) {
         output += '{\n';
         for (const optKey in options) {
@@ -129,9 +129,12 @@ export class EntityGenerator extends BaseGenerator {
           output += `    ${optKey}: ${value},\n`;
         }
         output += '  }';
+        if (options.array) {
+          isArray = '[]';
+        }
       }
 
-      output += `)\n  ${col.name}: ${col.type};\n\n`;
+      output += `)\n  ${col.name}: ${col.type}${isArray};\n\n`;
     }
 
     if (isSoftDelete) {
