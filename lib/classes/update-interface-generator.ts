@@ -11,7 +11,7 @@ import {
 } from '../interfaces/entity-json.interface';
 import { BaseGenerator } from './base-generator';
 
-export class CreateInterfaceGenerator extends BaseGenerator {
+export class UpdateInterfaceGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.suffix = 'interface';
@@ -19,14 +19,13 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     this.output = '';
     this.output += this.writeTypeGraphqlDependencies();
     this.output += this.writeEntityDependency();
-    this.output += this.writeUpdateInputDependency();
     this.output += this.writeInputs();
   }
 
   private columns: EntityJsonColumnInterface[];
 
   public generateFiles() {
-    this.writeFile('create-' + humpToDash(this.data.name), 'interfaces');
+    this.writeFile('update-' + this.moduleName, 'interfaces');
   }
 
   private pickColumns() {
@@ -34,7 +33,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     this.columns = [];
 
     for (const col of columns) {
-      if (R.has('api')(col) && !col.api.update && col.api.create) {
+      if (!R.has('api')(col) || col.api.update) {
         this.columns.push(col);
       }
     }
@@ -42,11 +41,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
 
   private writeTypeGraphqlDependencies(): string {
     const { columns } = this;
-    const decorators = ['InputType'];
-
-    if (!R.isEmpty(columns)) {
-      decorators.push('Field');
-    }
+    const decorators = ['Field', 'InputType'];
 
     for (const col of columns) {
       if (col.type === 'number' && col.options.type === 'integer') {
@@ -74,7 +69,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     });
 
     const columnDecorators = columns.map((col) => {
-      return col.decorator;
+      return col.type;
     });
 
     let output = '';
@@ -90,18 +85,16 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     }
 
     output = 'import {' + output;
-    return output.replace(/,$/gi, ` } from '../${humpToDash(name)}.entity';\n`);
-  }
-
-  private writeUpdateInputDependency(): string {
-    const { className, moduleName } = this;
-    return `import { Update${className}Input } from './update-${moduleName}.interface';\n\n`;
+    return output.replace(
+      /,$/gi,
+      ` } from '../${humpToDash(name)}.entity';\n\n`,
+    );
   }
 
   private writeInputs(): string {
     const { className, columns } = this;
 
-    let output = `@InputType()\nexport class Create${className}Input extends Update${className}Input {\n`;
+    let output = `@InputType()\nexport class Update${className}Input {\n`;
 
     for (const col of columns) {
       let gqlType = '';

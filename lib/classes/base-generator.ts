@@ -30,8 +30,6 @@ export class BaseGenerator {
       ? process.cwd() + '/src' + '/modules/' + this.moduleName + '/' + upperDir
       : process.cwd() + '/src' + '/modules/' + this.moduleName;
 
-    console.log(targetDir);
-
     const status = await mkdirOfPath(targetDir);
 
     if (!status) {

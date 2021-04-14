@@ -7,7 +7,7 @@ interface EntityJsonEnumInterface {
   }[];
 }
 
-interface EntityJsonColumnInterface {
+export interface EntityJsonColumnInterface {
   name: string;
   type: string;
   decorator?: string;
