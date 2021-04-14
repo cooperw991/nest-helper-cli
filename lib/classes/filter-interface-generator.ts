@@ -7,7 +7,7 @@ import {
 } from '../interfaces/entity-json.interface';
 import { BaseGenerator } from './base-generator';
 
-export class CreateInterfaceGenerator extends BaseGenerator {
+export class FilterInterfaceGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.suffix = 'interface';
@@ -15,14 +15,13 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     this.output = '';
     this.output += this.writeTypeGraphqlDependencies();
     this.output += this.writeEntityDependency();
-    this.output += this.writeUpdateInputDependency();
     this.output += this.writeInputs();
   }
 
   private columns: EntityJsonColumnInterface[];
 
   public generateFile() {
-    this.writeFile('create-' + this.moduleName, 'interfaces');
+    this.writeFile('filterby-' + this.moduleName, 'interfaces');
   }
 
   private pickColumns() {
@@ -30,7 +29,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     this.columns = [];
 
     for (const col of columns) {
-      if (R.has('api')(col) && !col.api.update && col.api.create) {
+      if (R.has('api')(col) && col.api.filter) {
         this.columns.push(col);
       }
     }
@@ -38,11 +37,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
 
   private writeTypeGraphqlDependencies(): string {
     const { columns } = this;
-    const decorators = ['InputType'];
-
-    if (!R.isEmpty(columns)) {
-      decorators.push('Field');
-    }
+    const decorators = ['Field', 'InputType'];
 
     for (const col of columns) {
       if (col.type === 'number' && col.options.type === 'integer') {
@@ -62,7 +57,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
   private writeEntityDependency(): string {
     const {
       columns,
-      data: { enums, name },
+      data: { enums },
     } = this;
 
     const enumDecorators = enums.map((enu) => {
@@ -70,7 +65,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     });
 
     const columnDecorators = columns.map((col) => {
-      return col.decorator;
+      return col.type;
     });
 
     let output = '';
@@ -88,19 +83,14 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     output = 'import {' + output;
     return output.replace(
       /,$/gi,
-      ` } from '../${inflected.dasherize(name)}.entity';\n`,
+      ` } from '../${this.moduleName}.entity';\n\n`,
     );
   }
 
-  private writeUpdateInputDependency(): string {
-    const { className, moduleName } = this;
-    return `import { Update${className}Input } from './update-${moduleName}.interface';\n\n`;
-  }
-
   private writeInputs(): string {
-    const { className, columns } = this;
+    const { uppperCamelPluralizeName, columns } = this;
 
-    let output = `@InputType()\nexport class Create${className}Input extends Update${className}Input {\n`;
+    let output = `@InputType()\nexport class ${uppperCamelPluralizeName}Filter {\n`;
 
     for (const col of columns) {
       let gqlType = '';
@@ -124,13 +114,9 @@ export class CreateInterfaceGenerator extends BaseGenerator {
         isArray = '[]';
       }
 
-      output += `  @Field(() => ${gqlType}, {\n    description: '${options.comment}',\n`;
+      output += `  @Field(() => ${gqlType}, { nullable: true })\n`;
 
-      if (options && options.nullable) {
-        output += `    nullable: true,\n`;
-      }
-
-      output += `  })\n  ${col.name}: ${col.type}${isArray};\n\n`;
+      output += `  ${col.name}: ${col.type}${isArray};\n\n`;
     }
 
     return output.replace(/\n$/gi, '}\n');

@@ -18,6 +18,7 @@ export interface EntityJsonColumnInterface {
     create?: boolean;
     update?: boolean;
     view?: boolean;
+    filter?: boolean;
   };
 }
 

@@ -14,8 +14,8 @@ export class EntityGenerator extends BaseGenerator {
     this.output += this.writeColumns();
   }
 
-  public generateFiles() {
-    this.writeFile(this.data.name);
+  public generateFile() {
+    this.writeFile(this.moduleName);
   }
 
   private writeTypeormDependencies(): string {

@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import * as inflected from 'inflected';
 
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
@@ -8,8 +7,7 @@ export class OrderInterfaceGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.suffix = 'interface';
-    this.orderDecorator =
-      inflected.pluralize(inflected.classify(this.data.name)) + 'Order';
+    this.orderDecorator = this.uppperCamelPluralizeName + 'Order';
     this.orderByDecorator = this.orderDecorator + 'By';
     this.output += this.writeTypeGraphqlDependencies();
     this.output += this.writeEnum();
@@ -19,7 +17,7 @@ export class OrderInterfaceGenerator extends BaseGenerator {
   private orderDecorator: string;
   private orderByDecorator: string;
 
-  public generateFiles() {
+  public generateFile() {
     this.writeFile('orderby-' + this.moduleName, 'interfaces');
   }
 

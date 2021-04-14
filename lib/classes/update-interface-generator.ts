@@ -20,7 +20,7 @@ export class UpdateInterfaceGenerator extends BaseGenerator {
 
   private columns: EntityJsonColumnInterface[];
 
-  public generateFiles() {
+  public generateFile() {
     this.writeFile('update-' + this.moduleName, 'interfaces');
   }
 
@@ -57,7 +57,7 @@ export class UpdateInterfaceGenerator extends BaseGenerator {
   private writeEntityDependency(): string {
     const {
       columns,
-      data: { enums, name },
+      data: { enums },
     } = this;
 
     const enumDecorators = enums.map((enu) => {
@@ -83,7 +83,7 @@ export class UpdateInterfaceGenerator extends BaseGenerator {
     output = 'import {' + output;
     return output.replace(
       /,$/gi,
-      ` } from '../${inflected.dasherize(name)}.entity';\n\n`,
+      ` } from '../${this.moduleName}.entity';\n\n`,
     );
   }
 
@@ -96,33 +96,31 @@ export class UpdateInterfaceGenerator extends BaseGenerator {
       let gqlType = '';
       const { options } = col;
 
-      if (!R.has('api')(col) || col.api.create) {
-        switch (true) {
-          case col.decorator === 'PrimaryGeneratedColumn':
-            gqlType = 'Int';
-            break;
-          case col.type === 'number':
-            gqlType = options?.type === 'integer' ? 'Int' : 'Number';
-            break;
-          default:
-            gqlType = inflected.classify(col.type);
-        }
-
-        let isArray = '';
-
-        if (col.options?.array) {
-          gqlType = `[${gqlType}]`;
-          isArray = '[]';
-        }
-
-        output += `  @Field(() => ${gqlType}, {\n    description: '${options.comment}',\n`;
-
-        if (options && options.nullable) {
-          output += `    nullable: true,\n`;
-        }
-
-        output += `  })\n  ${col.name}: ${col.type}${isArray};\n\n`;
+      switch (true) {
+        case col.decorator === 'PrimaryGeneratedColumn':
+          gqlType = 'Int';
+          break;
+        case col.type === 'number':
+          gqlType = options?.type === 'integer' ? 'Int' : 'Number';
+          break;
+        default:
+          gqlType = inflected.classify(col.type);
       }
+
+      let isArray = '';
+
+      if (col.options?.array) {
+        gqlType = `[${gqlType}]`;
+        isArray = '[]';
+      }
+
+      output += `  @Field(() => ${gqlType}, {\n    description: '${options.comment}',\n`;
+
+      if (options && options.nullable) {
+        output += `    nullable: true,\n`;
+      }
+
+      output += `  })\n  ${col.name}: ${col.type}${isArray};\n\n`;
     }
 
     return output.replace(/\n$/gi, '}\n');

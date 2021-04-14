@@ -62,6 +62,9 @@ const sample: EntityJsonInterface = {
         nullable: false,
         comment: 'int column2',
       },
+      api: {
+        filter: true,
+      },
     },
     {
       name: 'column3',
