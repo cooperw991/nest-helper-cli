@@ -56,6 +56,6 @@ export class BaseGenerator {
       ? process.cwd() + '/src' + '/modules/' + this.moduleName + '/' + upperDir
       : process.cwd() + '/src' + '/modules/' + this.moduleName;
 
-    await createFile(`${fileName}.${suffix}.ts`, `${targetDir}/`, output);
+    await createFile(`${fileName}.${suffix}.ts`, `${targetDir}/`, output, true);
   }
 }

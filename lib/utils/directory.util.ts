@@ -30,20 +30,23 @@ export async function createFile(
   fileName: string,
   dirPath: string,
   content: string,
+  rewrite = false,
 ) {
   const filePath = dirPath + fileName;
-  const tempstats: boolean = await new Promise((resolve) => {
-    fs.stat(filePath, (err, stats) => {
-      if (err) {
-        resolve(false);
-      } else {
-        resolve(stats.isFile());
-      }
+  if (!rewrite) {
+    const tempstats: boolean = await new Promise((resolve) => {
+      fs.stat(filePath, (err, stats) => {
+        if (err) {
+          resolve(false);
+        } else {
+          resolve(stats.isFile());
+        }
+      });
     });
-  });
 
-  if (tempstats) {
-    return true;
+    if (tempstats) {
+      return true;
+    }
   }
 
   const tempDir = path.parse(filePath).dir;

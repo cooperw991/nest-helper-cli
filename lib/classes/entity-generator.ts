@@ -137,7 +137,7 @@ export class EntityGenerator extends BaseGenerator {
       output += '  @Column({ default: false }) deleted: boolean;\n';
     }
 
-    output += `  @Field(() => Int)\n  @Column({ type: 'bigint', width: 11 })\n  createdAt: number;\n\n  @Field(() => Int)\n  @Column({ type: 'bigint', width: 11 })\n  updatedAt: number;\n\n  @BeforeInsert()\n  updateDateCreation() {\n    this.createdAt = Date.parse(new Date() + '') / 1000;\n    this.updatedAt = Date.parse(new Date() + '') / 1000;\n  }\n\n  @BeforeUpdate()\n  updateDateUpdate() {\n    this.updatedAt = Date.parse(new Date() + '') / 1000;\n  }\n}\n`;
+    output += `  @Column() createdById: number;\n\n  @Column({ nullable: true }) updatedById: number;\n\n  @Field(() => Int)\n  @Column({ type: 'bigint', width: 11 })\n  createdAt: number;\n\n  @Field(() => Int)\n  @Column({ type: 'bigint', width: 11 })\n  updatedAt: number;\n\n  @BeforeInsert()\n  updateDateCreation() {\n    this.createdAt = Date.parse(new Date() + '') / 1000;\n    this.updatedAt = Date.parse(new Date() + '') / 1000;\n  }\n\n  @BeforeUpdate()\n  updateDateUpdate() {\n    this.updatedAt = Date.parse(new Date() + '') / 1000;\n  }\n}\n`;
 
     return output;
   }
