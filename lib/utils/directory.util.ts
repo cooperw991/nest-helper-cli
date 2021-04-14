@@ -25,3 +25,33 @@ export async function mkdirOfPath(dir: string) {
 
   return true;
 }
+
+export async function createFile(
+  fileName: string,
+  dirPath: string,
+  content: string,
+) {
+  const filePath = dirPath + fileName;
+  const tempstats: boolean = await new Promise((resolve) => {
+    fs.stat(filePath, (err, stats) => {
+      if (err) {
+        resolve(false);
+      } else {
+        resolve(stats.isFile());
+      }
+    });
+  });
+
+  if (tempstats) {
+    return true;
+  }
+
+  const tempDir = path.parse(filePath).dir;
+  const status = await mkdirOfPath(tempDir);
+
+  if (status) {
+    fs.writeFileSync(filePath, content);
+  }
+
+  return true;
+}

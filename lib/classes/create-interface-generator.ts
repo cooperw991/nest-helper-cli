@@ -62,7 +62,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
   private writeEntityDependency(): string {
     const {
       columns,
-      data: { enums, name },
+      data: { enums },
     } = this;
 
     const enumDecorators = enums.map((enu) => {
@@ -86,10 +86,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     }
 
     output = 'import {' + output;
-    return output.replace(
-      /,$/gi,
-      ` } from '../${inflected.dasherize(name)}.entity';\n`,
-    );
+    return output.replace(/,$/gi, ` } from '../${this.moduleName}.entity';\n`);
   }
 
   private writeUpdateInputDependency(): string {

@@ -1,8 +1,7 @@
-import * as fs from 'fs';
 import * as R from 'ramda';
 import * as inflected from 'inflected';
 
-import { mkdirOfPath } from '../utils/directory.util';
+import { createFile } from '../utils/directory.util';
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 
 export class BaseGenerator {
@@ -21,6 +20,7 @@ export class BaseGenerator {
   protected variableName: string;
   protected camelPluralizeName: string;
   protected uppperCamelPluralizeName: string;
+  protected dasherizePluralizeName: string;
 
   private initNames() {
     // 类名称：首字母大写，驼峰
@@ -45,6 +45,9 @@ export class BaseGenerator {
 
     // 首字母大写复数：首字母小写，驼峰，复数
     this.uppperCamelPluralizeName = inflected.camelize(newPluralizedName);
+
+    // 全小写横线复数：全小写，短横线连接，复数
+    this.dasherizePluralizeName = inflected.dasherize(newPluralizedName);
   }
 
   public async writeFile(fileName: string, upperDir?: string) {
@@ -53,12 +56,6 @@ export class BaseGenerator {
       ? process.cwd() + '/src' + '/modules/' + this.moduleName + '/' + upperDir
       : process.cwd() + '/src' + '/modules/' + this.moduleName;
 
-    const status = await mkdirOfPath(targetDir);
-
-    if (!status) {
-      return;
-    }
-
-    fs.writeFileSync(`${targetDir}/${fileName}.${suffix}.ts`, output);
+    await createFile(`${fileName}.${suffix}.ts`, `${targetDir}/`, output);
   }
 }
