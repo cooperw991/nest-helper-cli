@@ -4,6 +4,7 @@ import { EntityGenerator } from '../lib/classes/entity-generator';
 import { InterfacesGenerator } from '../lib/classes/interfaces-generator';
 import { PagingDtoGenerator } from '../lib/classes/paging-dto-generator';
 import { ServiceGenerator } from '../lib/classes/service-generator';
+import { ResolverGenerator } from '../lib/classes/resolver-generator';
 
 const jsonData = JSON.parse(
   readFileSync(process.cwd() + '/sample_entity.json').toString(),
@@ -20,3 +21,6 @@ pagingGenerator.generateFile();
 
 const serviceGenerator = new ServiceGenerator(jsonData);
 serviceGenerator.generateFile();
+
+const resolverGenerator = new ResolverGenerator(jsonData);
+resolverGenerator.generateFile();

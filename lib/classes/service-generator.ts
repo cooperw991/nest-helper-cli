@@ -7,7 +7,7 @@ import { BaseGenerator } from './base-generator';
 export class ServiceGenerator extends BaseGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
-    this.suffix = 'serivce';
+    this.suffix = 'service';
     this.repoName = this.variableName + 'Repo';
     this.pickColumns();
     this.output += this.writeLibDependencies();
@@ -79,7 +79,7 @@ export class ServiceGenerator extends BaseGenerator {
     } = this;
     let output = `@Injectable()\nexport class ${className}Service {\n`;
 
-    output += `  constructor(\n    @InjectRepository(${className}) private readonly ${repoName}: Repository<${className}>,\n  ){}\n\n`;
+    output += `  constructor(\n    @InjectRepository(${className}) private readonly ${repoName}: Repository<${className}>,\n  ) {}\n\n`;
 
     output += this.writeFindOneMethod();
     output += this.writeListMethod();
