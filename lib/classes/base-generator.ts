@@ -1,11 +1,6 @@
 import * as fs from 'fs';
+import * as inflected from 'inflected';
 
-import {
-  humpToDash,
-  lineToHump,
-  firstUpperCase,
-  humpToUnderscore,
-} from '../utils/conversion.util';
 import { mkdirOfPath } from '../utils/directory.util';
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 
@@ -13,9 +8,10 @@ export class BaseGenerator {
   constructor(json: EntityJsonInterface) {
     this.data = json;
     this.output = '';
-    this.className = firstUpperCase(lineToHump(this.data.name));
-    this.moduleName = humpToDash(this.data.name);
-    this.tableName = this.data.prefix + humpToUnderscore(this.data.name);
+    this.className = inflected.camelize(this.data.name);
+    this.variableName = inflected.camelize(this.data.name, false);
+    this.moduleName = inflected.dasherize(this.data.name);
+    this.tableName = this.data.prefix + inflected.tableize(this.data.name);
   }
   protected data: EntityJsonInterface;
   protected output: string;
@@ -23,6 +19,7 @@ export class BaseGenerator {
   protected className: string;
   protected moduleName: string;
   protected tableName: string;
+  protected variableName: string;
 
   public async writeFile(fileName: string, upperDir?: string) {
     const { suffix, output } = this;

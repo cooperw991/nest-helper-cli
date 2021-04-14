@@ -1,10 +1,6 @@
 import * as R from 'ramda';
+import * as inflected from 'inflected';
 
-import {
-  humpToDash,
-  lineToHump,
-  firstUpperCase,
-} from '../utils/conversion.util';
 import {
   EntityJsonInterface,
   EntityJsonColumnInterface,
@@ -26,7 +22,10 @@ export class CreateInterfaceGenerator extends BaseGenerator {
   private columns: EntityJsonColumnInterface[];
 
   public generateFiles() {
-    this.writeFile('create-' + humpToDash(this.data.name), 'interfaces');
+    this.writeFile(
+      'create-' + inflected.dasherize(this.data.name),
+      'interfaces',
+    );
   }
 
   private pickColumns() {
@@ -70,7 +69,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     } = this;
 
     const enumDecorators = enums.map((enu) => {
-      return firstUpperCase(lineToHump(enu.name));
+      return enu.name;
     });
 
     const columnDecorators = columns.map((col) => {
@@ -90,7 +89,10 @@ export class CreateInterfaceGenerator extends BaseGenerator {
     }
 
     output = 'import {' + output;
-    return output.replace(/,$/gi, ` } from '../${humpToDash(name)}.entity';\n`);
+    return output.replace(
+      /,$/gi,
+      ` } from '../${inflected.dasherize(name)}.entity';\n`,
+    );
   }
 
   private writeUpdateInputDependency(): string {
@@ -116,7 +118,7 @@ export class CreateInterfaceGenerator extends BaseGenerator {
             gqlType = options?.type === 'integer' ? 'Int' : 'Number';
             break;
           default:
-            gqlType = firstUpperCase(col.type);
+            gqlType = inflected.classify(col.type);
         }
 
         let isArray = '';

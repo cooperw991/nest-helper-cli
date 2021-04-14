@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "commander": "^7.2.0",
+    "inflected": "^2.1.0",
     "ramda": "^0.27.1"
   }
 }

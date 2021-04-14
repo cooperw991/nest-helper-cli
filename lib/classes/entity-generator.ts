@@ -1,11 +1,7 @@
 import * as R from 'ramda';
+import * as inflected from 'inflected';
 
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import {
-  humpToUnderscore,
-  lineToHump,
-  firstUpperCase,
-} from '../utils/conversion.util';
 import { BaseGenerator } from './base-generator';
 
 export class EntityGenerator extends BaseGenerator {
@@ -97,7 +93,7 @@ export class EntityGenerator extends BaseGenerator {
             gqlType = col.options.type === 'integer' ? 'Int' : 'Number';
             break;
           default:
-            gqlType = firstUpperCase(col.type);
+            gqlType = inflected.classify(col.type);
         }
 
         if (R.has('options')(col) && col.options.array) {
