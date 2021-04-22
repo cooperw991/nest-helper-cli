@@ -1,0 +1,27 @@
+import { EntityJsonInterface } from '../interfaces/entity-json.interface';
+import { BaseGenerator } from './base-generator';
+import { MocksGenerator } from './mock-data-generator';
+import { ServiceSpecGenerator } from './service-spec-generator';
+import { ResolverSpecGenerator } from './resolver-spec-generator';
+
+export class TestsGenerator extends BaseGenerator {
+  constructor(json: EntityJsonInterface) {
+    super(json);
+    this.data = json;
+    this.suffix = 'spec';
+    this.output = '';
+    this.mocks = new MocksGenerator(this.data);
+    this.serviceSpec = new ServiceSpecGenerator(this.data);
+    this.resolverSpec = new ResolverSpecGenerator(this.data);
+  }
+
+  private mocks: MocksGenerator;
+  private serviceSpec: ServiceSpecGenerator;
+  private resolverSpec: ResolverSpecGenerator;
+
+  public generateFiles() {
+    this.mocks.generateFile();
+    this.serviceSpec.generateFile();
+    this.resolverSpec.generateFile();
+  }
+}

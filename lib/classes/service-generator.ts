@@ -34,7 +34,7 @@ export class ServiceGenerator extends BaseGenerator {
   }
 
   private writeLibDependencies(): string {
-    return `import { Injectable, InternalServerErrorException, GoneException } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\n\n`;
+    return `import {\n  Injectable,\n  InternalServerErrorException,\n  GoneException,\n} from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\n\n`;
   }
 
   private writeHelperDependencies(): string {
@@ -50,7 +50,7 @@ export class ServiceGenerator extends BaseGenerator {
 
     output += `import { splitWordsBySymbol } from '../../common/helpers/words.helper';\n`;
 
-    output += `import { pagingResponse, typeormPaging } from '../../common/helpers/pagination.helper';\n`;
+    output += `import {\n  pagingResponse,\n  typeormPaging,\n} from '../../common/helpers/pagination.helper';\n`;
 
     output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
 
@@ -79,7 +79,7 @@ export class ServiceGenerator extends BaseGenerator {
     } = this;
     let output = `@Injectable()\nexport class ${className}Service {\n`;
 
-    output += `  constructor(\n    @InjectRepository(${className}) private readonly ${repoName}: Repository<${className}>,\n  ) {}\n\n`;
+    output += `  constructor(\n    @InjectRepository(${className})\n    private readonly ${repoName}: Repository<${className}>,\n  ) {}\n\n`;
 
     output += this.writeFindOneMethod();
     output += this.writeListMethod();
@@ -124,7 +124,7 @@ export class ServiceGenerator extends BaseGenerator {
   private writeSoftDeleteMethod(): string {
     const { repoName, variableName } = this;
 
-    let output = `  async delete(me: User, ${variableName}Id: number): Promise<boolean> {\n`;
+    let output = `  async softDelete(me: User, ${variableName}Id: number): Promise<boolean> {\n`;
 
     output += `    const ${variableName} = await this.findOne(me, ${variableName}Id);\n\n`;
 

@@ -1,7 +1,4 @@
-import {
-  EntityJsonInterface,
-  EntityJsonColumnInterface,
-} from '../interfaces/entity-json.interface';
+import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import { BaseGenerator } from './base-generator';
 
 export class ResolverGenerator extends BaseGenerator {
@@ -105,12 +102,19 @@ export class ResolverGenerator extends BaseGenerator {
   }
 
   private writeDeleteMethod(): string {
-    const { servName, className, variableName } = this;
+    const {
+      servName,
+      className,
+      variableName,
+      data: { isSoftDelete },
+    } = this;
 
     let output = `  @Mutation(() => Boolean, {\n    description: 'Delete ${variableName}',\n  })\n`;
 
+    const methodName = isSoftDelete ? 'softDelete' : 'delete';
+
     output += `  @UseGuards(GqlAuthGuard)\n`;
-    output += `  async delete${className}(\n    @Me() me: User,\n    @Args({\n      name: '${variableName}Id',\n      type: () => Int,\n    })\n    ${variableName}Id: number,\n  ): Promise<boolean> {\n    return this.${servName}.delete(me, ${variableName}Id);\n  }\n\n`;
+    output += `  async delete${className}(\n    @Me() me: User,\n    @Args({\n      name: '${variableName}Id',\n      type: () => Int,\n    })\n    ${variableName}Id: number,\n  ): Promise<boolean> {\n    return this.${servName}.${methodName}(me, ${variableName}Id);\n  }\n\n`;
 
     return output;
   }
