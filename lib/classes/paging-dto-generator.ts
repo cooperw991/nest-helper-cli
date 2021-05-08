@@ -1,8 +1,8 @@
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import { createFile } from '../utils/directory.util';
-import { BaseGenerator } from './base-generator';
+import { FileGenerator } from './file-generator';
 
-export class PagingDtoGenerator extends BaseGenerator {
+export class PagingDTOGenerator extends FileGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.suffix = 'dto';

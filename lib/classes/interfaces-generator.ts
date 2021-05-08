@@ -1,11 +1,12 @@
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { BaseGenerator } from './base-generator';
+import { mkdirOfPath } from '../utils/directory.util';
+import { FileGenerator } from './file-generator';
 import { CreateInterfaceGenerator } from './create-interface-generator';
 import { UpdateInterfaceGenerator } from './update-interface-generator';
 import { OrderInterfaceGenerator } from './order-interface-generator';
 import { FilterInterfaceGenerator } from './filter-interface-generator';
 
-export class InterfacesGenerator extends BaseGenerator {
+export class InterfacesGenerator extends FileGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.data = json;
@@ -22,8 +23,7 @@ export class InterfacesGenerator extends BaseGenerator {
   private orderInterface: OrderInterfaceGenerator;
   private filterInterface: FilterInterfaceGenerator;
 
-  public generateFiles() {
-    this.updateInterface.generateFile();
+  public async generateFiles() {
     this.createInterface.generateFile();
     this.orderInterface.generateFile();
     this.filterInterface.generateFile();

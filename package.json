@@ -1,6 +1,6 @@
 {
   "name": "nest-helper-cli",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "nestjs 自动生成模块套件辅助工具",
   "main": "index.js",
   "scripts": {
@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "nest-helper": "dist/bin/index.js"
+    "nest-helper": "dist/bin/nest-helper.js"
   },
   "author": "",
   "license": "ISC",
@@ -29,8 +29,18 @@
     "typescript": "^4.2.4"
   },
   "dependencies": {
+    "chalk": "^4.1.1",
+    "cli-table3": "^0.6.0",
     "commander": "^7.2.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "dayjs": "^1.10.4",
     "inflected": "^2.1.0",
-    "ramda": "^0.27.1"
+    "ramda": "^0.27.1",
+    "winston": "^3.3.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }

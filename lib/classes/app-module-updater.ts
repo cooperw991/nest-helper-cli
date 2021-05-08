@@ -3,13 +3,13 @@ import { createFile } from '../utils/directory.util';
 import * as R from 'ramda';
 
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { BaseGenerator } from './base-generator';
+import { FileGenerator } from './file-generator';
 
 interface MatchFuncInterfacce {
   (string): boolean;
 }
 
-export class AppModuleUpdater extends BaseGenerator {
+export class AppModuleUpdater extends FileGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
   }
@@ -53,18 +53,16 @@ export class AppModuleUpdater extends BaseGenerator {
     const { className, moduleName } = this;
     const importingLineIdx = this.findImportingLine();
 
-    console.log(this.fileLines);
-
     this.fileLines = R.insert(
       importingLineIdx,
-      `import { ${className}Module } from './modules/${moduleName}.module';`,
+      `import { ${className}Module } from './modules/${moduleName}/${moduleName}.module';`,
     )(this.fileLines);
 
     const injectingLineIdx = this.findInjectingLine();
 
     if (injectingLineIdx !== -1) {
       this.fileLines = R.insert(
-        injectingLineIdx + 1,
+        injectingLineIdx,
         `    ${className}Module,`,
       )(this.fileLines);
     }

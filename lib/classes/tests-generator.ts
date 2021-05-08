@@ -1,10 +1,10 @@
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { BaseGenerator } from './base-generator';
+import { FileGenerator } from './file-generator';
 import { MocksGenerator } from './mock-data-generator';
 import { ServiceSpecGenerator } from './service-spec-generator';
 import { ResolverSpecGenerator } from './resolver-spec-generator';
 
-export class TestsGenerator extends BaseGenerator {
+export class TestsGenerator extends FileGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.data = json;

@@ -1,7 +1,7 @@
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { BaseGenerator } from './base-generator';
+import { FileGenerator } from './file-generator';
 
-export class ResolverGenerator extends BaseGenerator {
+export class ResolverGenerator extends FileGenerator {
   constructor(json: EntityJsonInterface) {
     super(json);
     this.suffix = 'resolver';

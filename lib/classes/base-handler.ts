@@ -1,10 +1,9 @@
 import * as R from 'ramda';
 import * as inflected from 'inflected';
 
-import { createFile } from '../utils/directory.util';
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 
-export class BaseGenerator {
+export class BaseHandler {
   constructor(json: EntityJsonInterface) {
     this.data = json;
     this.output = '';
@@ -48,14 +47,5 @@ export class BaseGenerator {
 
     // 全小写横线复数：全小写，短横线连接，复数
     this.dasherizePluralizeName = inflected.dasherize(newPluralizedName);
-  }
-
-  public async writeFile(fileName: string, upperDir?: string) {
-    const { suffix, output } = this;
-    const targetDir = upperDir
-      ? process.cwd() + '/src' + '/modules/' + this.moduleName + '/' + upperDir
-      : process.cwd() + '/src' + '/modules/' + this.moduleName;
-
-    await createFile(`${fileName}.${suffix}.ts`, `${targetDir}/`, output, true);
   }
 }
