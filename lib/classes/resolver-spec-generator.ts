@@ -18,10 +18,7 @@ export class ResolverSpecGenerator extends FileGenerator {
   }
 
   private writeLibDependences(): string {
-    let output = `import * as faker from 'faker';\n\n`;
-    output += `import { Test, TestingModule } from '@nestjs/testing';\n`;
-
-    return output;
+    return `import { Test, TestingModule } from '@nestjs/testing';\n`;
   }
 
   private writeServiceAndEntityDependencies(): string {
@@ -30,16 +27,8 @@ export class ResolverSpecGenerator extends FileGenerator {
   }
 
   private writeVariablesDependency(): string {
-    const {
-      className,
-      camelPluralizeName,
-      data: { isSoftDelete },
-    } = this;
-    let output = `import {\n  creator,\n  modifier,\n  createInput,\n  updateInput,\n  fakeId,\n  saved${className},\n  updated${className},\n  ${camelPluralizeName},\n  currentLimit,\n  ${camelPluralizeName}WithPaging,\n`;
-
-    if (isSoftDelete) {
-      output += `  softDelete${className},\n`;
-    }
+    const { className, camelPluralizeName } = this;
+    const output = `import {\n  creator,\n  modifier,\n  createInput,\n  updateInput,\n  fakeId,\n  saved${className},\n  updated${className},\n  currentLimit,\n  ${camelPluralizeName}WithPaging,\n`;
 
     return output + `} from './${this.moduleName}.mock';\n\n`;
   }
@@ -107,7 +96,7 @@ export class ResolverSpecGenerator extends FileGenerator {
 
     output += `    it('should soft delete the record', async () => {\n`;
 
-    output += `      const deleteSpy = jest.spyOn(service, 'softDelete').mockResolvedValue(true);\n\n`;
+    output += `      const deleteSpy = jest\n        .spyOn(service, 'softDelete')\n        .mockResolvedValue(true);\n\n`;
 
     output += `      const res = await resolver.delete${className}(modifier, fakeId);\n\n`;
 
@@ -141,22 +130,22 @@ export class ResolverSpecGenerator extends FileGenerator {
 
     output += `      const res = await resolver.get${className}(creator, fakeId);\n`;
 
-    output += `      expect(findOneSpy).toBeCalledWith(creator, fakeId);\n      expect(res).toEqual(saved${className});\n    });  });\n\n`;
+    output += `      expect(findOneSpy).toBeCalledWith(creator, fakeId);\n      expect(res).toEqual(saved${className});\n    });\n  });\n\n`;
 
     return output;
   }
 
   private writeListTest(): string {
-    const { variableName, camelPluralizeName } = this;
+    const { variableName, camelPluralizeName, uppperCamelPluralizeName } = this;
     let output = `  describe('list ${variableName} records', () => {\n`;
 
     output += `    it('should return the ${variableName} list with paging', async () => {\n`;
 
-    output += `      const listSpy = jest\n        .spyOn(service, 'list')\n        .mockResolvedValue(${camelPluralizeName});\n\n`;
+    output += `      const listSpy = jest\n        .spyOn(service, 'list')\n        .mockResolvedValue(${camelPluralizeName}WithPaging);\n\n`;
 
-    output += `      const res = await resolver.list${this.className}(\n        creator,\n        { limit: currentLimit, offest: 0 },\n        null,\n        null,\n      );\n`;
+    output += `      const res = await resolver.list${uppperCamelPluralizeName}(creator, null, null, {\n        limit: currentLimit, offset: 0,\n      });\n`;
 
-    output += `      expect(listSpy).toBeCalledWith(\n        creator,\n        { limit: currentLimit, offest: 0 },\n        null,\n        null,\n      );\n      expect(res).toEqual(${camelPluralizeName}WithPaging);\n    });  });\n\n`;
+    output += `      expect(listSpy).toBeCalledWith(creator, null, null, {\n        limit: currentLimit, offset: 0,\n      });\n      expect(res).toEqual(${camelPluralizeName}WithPaging);\n    });\n  });\n`;
 
     return output;
   }

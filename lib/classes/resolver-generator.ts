@@ -35,9 +35,11 @@ export class ResolverGenerator extends FileGenerator {
     } = this;
     let output = '';
 
-    output += `import { User as Me } from '../../common/decorators/user.decorator';\n`;
+    output += `import { Me } from '../../common/decorators/me.decorator';\n`;
 
-    output += `import { GqlAuthGuard } from '../../common/guards/auth.guard';\n`;
+    output += `import { CreatorAndModifier } from '../../common/dto/creator-and-modifier.dto;\n`;
+
+    output += `import { GqlAuthGuard } from '../../common/guards/gql-auth.guard';\n`;
 
     output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
 
@@ -137,7 +139,7 @@ export class ResolverGenerator extends FileGenerator {
 
     output += `  @UseGuards(GqlAuthGuard)\n`;
 
-    output += `  async list${uppperCamelPluralizeName}(\n    @Me() me: User,\n    @Args({\n      name: 'filter',\n      type: () => ${uppperCamelPluralizeName}Filter,\n      nullable: true,\n    })\n    filter: ${uppperCamelPluralizeName}Filter,\n    @Args({\n      name: 'filter',\n      type: () => ${uppperCamelPluralizeName}Order,\n      nullable: true,\n    })\n    order: ${uppperCamelPluralizeName}Order,\n    @Args({\n      name: 'paging',\n      type: () => PagingQuery,\n      nullable: true,\n    })\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n    return this.${servName}.list(me, paging, filter, order);\n  }\n\n`;
+    output += `  async list${uppperCamelPluralizeName}(\n    @Me() me: User,\n    @Args({\n      name: 'filter',\n      type: () => ${uppperCamelPluralizeName}Filter,\n      nullable: true,\n    })\n    filter: ${uppperCamelPluralizeName}Filter,\n    @Args({\n      name: 'order',\n      type: () => ${uppperCamelPluralizeName}Order,\n      nullable: true,\n    })\n    order: ${uppperCamelPluralizeName}Order,\n    @Args({\n      name: 'paging',\n      type: () => PagingQuery,\n      nullable: true,\n    })\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n    return this.${servName}.list(me, paging, filter, order);\n  }\n\n`;
 
     return output;
   }
@@ -145,10 +147,6 @@ export class ResolverGenerator extends FileGenerator {
   private writeProperties(): string {
     const { variableName } = this;
 
-    let output = `  @ResolveProperty('createdBy', () => User)\n  async createdBy(\n    @Root() ${variableName}: ${this.className},\n    @Context() ctx: AppGraphqlContext,\n  ): Promise<User> {\n    return ctx.userLoader.load(${variableName}.createdById);\n  }\n\n`;
-
-    output += `  @ResolveProperty('updatedBy', () => User)\n  async updatedBy(\n    @Root() ${variableName}: ${this.className},\n    @Context() ctx: AppGraphqlContext,\n  ): Promise<User> {\n    return ctx.userLoader.load(${variableName}.updatedById);\n  }\n\n`;
-
-    return output;
+    return `  @ResolveProperty('creatorAndLastModifier', () => User)\n  async creatorAndLastModifier(\n    @Root() ${variableName}: ${this.className},\n    @Context() ctx: AppGraphqlContext,\n  ): Promise<CreatorAndModifier> {\n    return ctx.creatorAndModifierLoader.load([\n      ${variableName}.createdById,\n      ${variableName}.updatedById,\n    ]);\n  }\n\n`;
   }
 }

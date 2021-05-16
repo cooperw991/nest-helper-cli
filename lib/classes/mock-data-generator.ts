@@ -78,8 +78,8 @@ export class MocksGenerator extends FileGenerator {
       data: { columns },
     } = this;
 
-    let createOutput = `const createInput: Create${className}Input = Object.assign(\n  new Create${className}Input(),\n  {\n`;
-    let updateOutput = `const updateInput: Update${className}Input = Object.assign(\n  new Update${className}Input(),\n  {\n`;
+    let createOutput = `const createInput: Create${className}Input = Object.assign(new Create${className}Input(), {\n`;
+    let updateOutput = `const updateInput: Update${className}Input = Object.assign(new Update${className}Input(), {\n`;
 
     for (const col of columns) {
       let fakeType = '';
@@ -94,16 +94,16 @@ export class MocksGenerator extends FileGenerator {
           fakeType = rdmArr(inflected.camelize(col.type, false) + 'Arr');
       }
       if (!col.api || col.api.create) {
-        createOutput += `    ${col.name}: ${fakeType},\n`;
+        createOutput += `  ${col.name}: ${fakeType},\n`;
       }
 
       if (!col.api || col.api.update) {
-        updateOutput += `    ${col.name}: ${fakeType},\n`;
+        updateOutput += `  ${col.name}: ${fakeType},\n`;
       }
     }
 
-    createOutput += '  },\n);\n\n';
-    updateOutput += '  },\n);\n\n';
+    createOutput += '  });\n\n';
+    updateOutput += '  });\n\n';
 
     return createOutput + updateOutput;
   }
@@ -126,7 +126,7 @@ export class MocksGenerator extends FileGenerator {
 
     output += `});\n\n`;
 
-    output += `const updated${className}: ${className} = Object.assign(\n  new ${className}(),\n  saved${className},\n  {\n    ...updateInput,\n    updatedById: modifier.id,\n  },\n);\n\n`;
+    output += `const updated${className}: ${className} = Object.assign(new ${className}(), saved${className}, {\n  ...updateInput,\n  updatedById: modifier.id,\n});\n\n`;
 
     output += `const ${camelPluralizeName}: ${className}[] = [];\n\n`;
     output += `const totalCount = ${rdmNum()};\n\n`;

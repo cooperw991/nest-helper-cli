@@ -16,11 +16,9 @@ import { AbstractAction } from './abstract.action';
 
 export class GenerateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
-    const schematic = inputs.find(
-      (input: Input) => {
-        return input.name === 'schematic';
-      }
-    )
+    const schematic = inputs.find((input: Input) => {
+      return input.name === 'schematic';
+    });
 
     if (schematic.value === 'json') {
       await this.generateJsonFile(inputs.concat(options));
@@ -29,7 +27,6 @@ export class GenerateAction extends AbstractAction {
     if (schematic.value === 'module' || schematic.value === 'mo') {
       await this.generateModuleFiles(inputs.concat(options));
     }
-    
   }
 
   generateJsonFile = async (inputs: Input[]) => {
@@ -120,25 +117,26 @@ export class GenerateAction extends AbstractAction {
       ],
     };
 
-    const fileNameOption = inputs.find(
-      (option) => option.name === 'name',
-    )?.value as string || 'sample_entity.json';
+    const fileNameOption =
+      (inputs.find((option) => option.name === 'name')?.value as string) ||
+      'sample_entity.json';
 
     writeFileSync(process.cwd() + `/${fileNameOption}`, JSON.stringify(sample));
-  }
+  };
 
   generateModuleFiles = async (inputs: Input[]) => {
-    const fileNameOption = inputs.find(
-      (option) => option.name === 'fileName',
-    )?.value as string || 'sample_entity.json';
+    const fileName =
+      (inputs.find((input) => input.name === 'name')?.value as string) ||
+      'sample_entity.json';
 
     let jsonData;
 
     try {
       jsonData = JSON.parse(
-        readFileSync(process.cwd() + `/${fileNameOption}`).toString(),
+        readFileSync(process.cwd() + `/${fileName}`).toString(),
       );
     } catch (e) {
+      console.log(process.cwd() + `/${fileName}`);
       logger.info('entity json file not found!');
     }
 
@@ -171,5 +169,5 @@ export class GenerateAction extends AbstractAction {
       testsGenerator.generateFiles(),
       appModuleUpdater.updateAppModuleFile(),
     ]);
-  }
+  };
 }

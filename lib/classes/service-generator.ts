@@ -46,11 +46,11 @@ export class ServiceGenerator extends FileGenerator {
     } = this;
     let output = '';
 
-    output += `import { errorMsg } from '../../common/helpers/errors.helper';\n`;
+    output += `import { errorMsg } from '../../common/utils/errors.utility';\n`;
 
-    output += `import { splitWordsBySymbol } from '../../common/helpers/words.helper';\n`;
+    output += `import { splitWordsBySymbol } from '../../common/utils/words.utility';\n`;
 
-    output += `import {\n  pagingResponse,\n  typeormPaging,\n} from '../../common/helpers/pagination.helper';\n`;
+    output += `import {\n  pagingResponse,\n  typeormPaging,\n} from '../../common/utils/pagination.utility';\n`;
 
     output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
 

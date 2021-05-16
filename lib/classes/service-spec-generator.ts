@@ -19,8 +19,7 @@ export class ServiceSpecGenerator extends FileGenerator {
   }
 
   private writeLibDependences(): string {
-    let output = `import * as faker from 'faker';\n\n`;
-    output += `import { Test, TestingModule } from '@nestjs/testing';\n`;
+    let output = `import { Test, TestingModule } from '@nestjs/testing';\n`;
     output += `import { GoneException } from '@nestjs/common';\n`;
     output += `import { getRepositoryToken } from '@nestjs/typeorm';\n`;
     output += `import { Repository } from 'typeorm';\n\n`;
@@ -29,7 +28,7 @@ export class ServiceSpecGenerator extends FileGenerator {
   }
 
   private writeHelperDependencies(): string {
-    return `import { errorMsg } from '../../common/helpers/errors.helper';\nimport { FakeRepository, CreateQueryBuilder } from '../../common/helpers/fake-typeorm';\n\n`;
+    return `import { errorMsg } from '../../common/utils/errors.utility';\nimport {\n  FakeRepository,\n  FakeCreateQueryBuilder,\n} from '../../common/helpers/fake-typeorm.helper';\n\n`;
   }
 
   private writeServiceAndEntityDependencies(): string {
@@ -43,10 +42,10 @@ export class ServiceSpecGenerator extends FileGenerator {
       camelPluralizeName,
       data: { isSoftDelete },
     } = this;
-    let output = `import {\n  creator,\n  modifier,\n  createInput,\n  updateInput,\n  fakeId,\n  created${className},\n  saved${className},\n  updated${className},\n  ${camelPluralizeName},\n  currentLimit,\n  ${camelPluralizeName}WithPaging`;
+    let output = `import {\n  creator,\n  modifier,\n  createInput,\n  updateInput,\n  fakeId,\n  created${className},\n  saved${className},\n  updated${className},\n  ${camelPluralizeName},\n  currentLimit,\n  ${camelPluralizeName}WithPaging,\n  totalCount,\n`;
 
     if (isSoftDelete) {
-      output += `  softDelete${className},\n`;
+      output += `  softDeleted${className},\n`;
     }
 
     return output + `} from './${this.moduleName}.mock';\n\n`;
@@ -160,21 +159,21 @@ export class ServiceSpecGenerator extends FileGenerator {
 
     output += `      const findSpy = jest\n        .spyOn(service, 'findOne')\n        .mockResolvedValue(null);\n\n`;
 
-    output += `      try {\n        await service.find(creator, fakeId);\n      } catch (e) {\n        expect(e).toBeInstanceOf(GoneException);\n        expect(findSpy).toHaveBeenCalledWith({\n          where: {\n            id: fakeId,\n`;
+    output += `      try {\n        await service.findOne(creator, fakeId);\n      } catch (e) {\n        expect(e).toBeInstanceOf(GoneException);\n        expect(findSpy).toHaveBeenCalledWith({\n          where: {\n            id: fakeId,\n`;
 
     if (isSoftDelete) {
       output += `            deleted: false,\n`;
     }
 
-    output += `          },\n        });\n        expect(e.message.message).toBe(\n          errorMsg(['${className}(id: ' + ${variableName}Id + ')']).NOT_EXIST,\n        );\n      }\n    });\n\n`;
+    output += `          },\n        });\n        expect(e.message.message).toBe(\n          errorMsg(['${className}(id: ' + fakeId + ')']).NOT_EXIST,\n        );\n      }\n    });\n\n`;
 
     output += `    it('should return the found record', async () => {\n`;
 
-    output += `      const findSpy = jest\n        .spyOn(${variableName}Repo, 'findOne')\n        .mockResovedValue(saved${className});\n\n`;
+    output += `      const findSpy = jest\n        .spyOn(${variableName}Repo, 'findOne')\n        .mockResolvedValue(saved${className});\n\n`;
 
     output += `      const res = await service.findOne(creator, fakeId);\n\n`;
 
-    output += `      expect(findSpy).toBeCalledWith({\n        where: {\n          id: ${className}Id,\n`;
+    output += `      expect(findSpy).toBeCalledWith({\n        where: {\n          id: fakeId,\n`;
     if (isSoftDelete) {
       output += `          deleted: false,\n`;
     }
@@ -189,11 +188,11 @@ export class ServiceSpecGenerator extends FileGenerator {
 
     output += `    it('should return the ${variableName} list with paging', async () => {\n`;
 
-    output += `      const queryBuilder = Object.assign(\n        new CreateQueryBuilder(), {\n          getManyAndCount: () => [${camelPluralizeName}, totalCount],\n        },\n      );\n\n`;
+    output += `      const queryBuilderSpy = Object.assign(\n        new FakeCreateQueryBuilder(), {\n          getManyAndCount: () => [${camelPluralizeName}, totalCount],\n        },\n      );\n\n`;
 
-    output += `      const res = await service.list(creator, { limit: currentLimit, offest: 0 }, null, null);\n\n`;
+    output += `      const res = await service.list(creator, { limit: currentLimit, offset: 0 }, null, null);\n\n`;
 
-    output += `      expect(res).toEqual(${camelPluralizeName}WithPaging);\n    });\n  });\n`;
+    output += `      expect(res).toEqual(${camelPluralizeName}WithPaging);\n      expect(queryBuilderSpy).toHaveBeenCalledWith('${variableName}');\n    });\n  });\n`;
 
     return output;
   }

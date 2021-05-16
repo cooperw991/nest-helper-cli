@@ -25,6 +25,7 @@ export class InterfacesGenerator extends FileGenerator {
 
   public async generateFiles() {
     this.createInterface.generateFile();
+    this.updateInterface.generateFile();
     this.orderInterface.generateFile();
     this.filterInterface.generateFile();
   }

@@ -15,7 +15,7 @@ export class ModuleGenerator extends FileGenerator {
   }
 
   private writeLibDependencies(): string {
-    let output = `import { Module } from '@nestjs/commom';\n`;
+    let output = `import { Module } from '@nestjs/common';\n`;
     output += `import { TypeOrmModule } from '@nestjs/typeorm';\n\n`;
 
     return output;
