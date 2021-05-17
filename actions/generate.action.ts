@@ -8,6 +8,12 @@ import { ServiceGenerator } from '../lib/classes/service-generator';
 import { ResolverGenerator } from '../lib/classes/resolver-generator';
 import { ModuleGenerator } from '../lib/classes/module-generator';
 import { TestsGenerator } from '../lib/classes/tests-generator';
+import { CommonDecoratorsGenerator } from '../lib/classes/common-files/decorators-generator';
+import { CommonDTOsGenerator } from '../lib/classes/common-files/dto-generator';
+import { CommonGuardsGenerator } from '../lib/classes/common-files/guards-generator';
+import { CommonHelpersGenerator } from '../lib/classes/common-files/helpers-generator';
+import { CommonInterfacesGenerator } from '../lib/classes/common-files/interfaces-generator';
+import { CommonUtilsGenerator } from '../lib/classes/common-files/utils-generator';
 import { AppModuleUpdater } from '../lib/classes/app-module-updater';
 import { DirectoryCreator } from '../lib/classes/directory-creator';
 import { EntityJsonInterface } from '../lib/interfaces/entity-json.interface';
@@ -26,6 +32,10 @@ export class GenerateAction extends AbstractAction {
 
     if (schematic.value === 'module' || schematic.value === 'mo') {
       await this.generateModuleFiles(inputs.concat(options));
+    }
+
+    if (schematic.value === 'common' || schematic.value === 'co') {
+      await this.generateCommonFiles();
     }
   }
 
@@ -168,6 +178,29 @@ export class GenerateAction extends AbstractAction {
       moduleGenerator.generateFile(),
       testsGenerator.generateFiles(),
       appModuleUpdater.updateAppModuleFile(),
+    ]);
+  };
+
+  generateCommonFiles = async () => {
+    const decoratorsGenerator = new CommonDecoratorsGenerator();
+
+    const dtoGenerator = new CommonDTOsGenerator();
+
+    const guardsGenerator = new CommonGuardsGenerator();
+
+    const helpersGenerator = new CommonHelpersGenerator();
+
+    const interfacesGenerator = new CommonInterfacesGenerator();
+
+    const utilsGenerator = new CommonUtilsGenerator();
+
+    await Promise.all([
+      decoratorsGenerator.generateFiles(),
+      dtoGenerator.generateFiles(),
+      guardsGenerator.generateFiles(),
+      helpersGenerator.generateFiles(),
+      interfacesGenerator.generateFiles(),
+      utilsGenerator.generateFiles(),
     ]);
   };
 }

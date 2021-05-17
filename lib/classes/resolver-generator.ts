@@ -43,7 +43,7 @@ export class ResolverGenerator extends FileGenerator {
 
     output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
 
-    output += `import { AppGraphqlContext } from '../../common/interfaces/app_graphql_context.interface';\n\n`;
+    output += `import { AppGraphqlContext } from '../../common/interfaces/app-graphql-context.interface';\n\n`;
 
     output += `import { User } from '../user/user.entity';\n\n`;
 

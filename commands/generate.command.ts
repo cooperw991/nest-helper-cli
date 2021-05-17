@@ -23,6 +23,11 @@ export class GenerateCommand extends AbstractCommand {
       alias: 'mo',
       description: 'Generate a new module',
     },
+    {
+      name: 'common',
+      alias: 'co',
+      description: 'Generate common files',
+    },
   ];
 
   public load(program: CommanderStatic) {

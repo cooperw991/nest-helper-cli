@@ -1,5 +1,4 @@
 import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { mkdirOfPath } from '../utils/directory.util';
 import { FileGenerator } from './file-generator';
 import { CreateInterfaceGenerator } from './create-interface-generator';
 import { UpdateInterfaceGenerator } from './update-interface-generator';

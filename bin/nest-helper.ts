@@ -17,6 +17,6 @@ const bootstrap = () => {
     .helpOption('-h, --help', 'Output usage information.');
 
   new GenerateCommand(new GenerateAction()).load(program);
-}
+};
 
 bootstrap();
