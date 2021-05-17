@@ -50,7 +50,7 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `import { splitWordsBySymbol } from '../../common/utils/words.utility';\n`;
 
-    output += `import {\n  pagingResponse,\n  typeormPaging,\n} from '../../common/utils/pagination.utility';\n`;
+    output += `import {\n  pagingResponse,\n  fillWithDefaultPaging,\n} from '../../common/utils/pagination.utility';\n`;
 
     output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
 
@@ -163,7 +163,7 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `      },\n    });\n\n`;
 
-    output += `    if (!${variableName}) {\n      throw new GoneException(\n        errorMsg(['${className}(id: ' + ${variableName}Id + ')']).NOT_EXIST,\n      );\n    }\n\n    return ${variableName};\n  }\n`;
+    output += `    if (!${variableName}) {\n      throw new GoneException(\n        errorMsg(['${className}(id: ' + ${variableName}Id + ')']).NOT_EXIST,\n      );\n    }\n\n    return ${variableName};\n  }\n\n`;
 
     return output;
   }
@@ -175,7 +175,7 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `    const queryBuilder = this.${repoName}\n      .createQueryBuilder('${variableName}')\n      .orderBy(order ? order.by : '${variableName}.id', order?.asc ? 'ASC' : 'DESC');\n\n`;
 
-    output += `    paging = typeormPaging(paging);\n\n`;
+    output += `    paging = fillWithDefaultPaging(paging);\n\n`;
 
     output += `    queryBuilder.take(paging.limit).skip(paging.offset);\n\n`;
 

@@ -8,6 +8,7 @@ import { ServiceGenerator } from '../lib/classes/service-generator';
 import { ResolverGenerator } from '../lib/classes/resolver-generator';
 import { ModuleGenerator } from '../lib/classes/module-generator';
 import { TestsGenerator } from '../lib/classes/tests-generator';
+import { CommonDirectoryCreator } from '../lib/classes/common-files/directory-creator';
 import { CommonDecoratorsGenerator } from '../lib/classes/common-files/decorators-generator';
 import { CommonDTOsGenerator } from '../lib/classes/common-files/dto-generator';
 import { CommonGuardsGenerator } from '../lib/classes/common-files/guards-generator';
@@ -182,6 +183,8 @@ export class GenerateAction extends AbstractAction {
   };
 
   generateCommonFiles = async () => {
+    const commonDirectoryCreator = new CommonDirectoryCreator();
+
     const decoratorsGenerator = new CommonDecoratorsGenerator();
 
     const dtoGenerator = new CommonDTOsGenerator();
@@ -193,6 +196,8 @@ export class GenerateAction extends AbstractAction {
     const interfacesGenerator = new CommonInterfacesGenerator();
 
     const utilsGenerator = new CommonUtilsGenerator();
+
+    await commonDirectoryCreator.createModulePath();
 
     await Promise.all([
       decoratorsGenerator.generateFiles(),

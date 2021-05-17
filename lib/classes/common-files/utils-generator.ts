@@ -12,9 +12,9 @@ export class CommonUtilsGenerator extends BaseHandler {
 
   public generateFiles() {
     this.writeFile('errors.utility.ts', 'utils');
-    this.writeFile('paging-query.interface.ts', 'utils');
+    this.writeFile('logger.utility.ts', 'utils');
     this.writeFile('pagination.utility.ts', 'utils');
-    this.writeFile('words.interface.ts', 'utils');
+    this.writeFile('words.utility.ts', 'utils');
   }
 
   private generateErrorUtility() {
@@ -42,13 +42,11 @@ export class CommonUtilsGenerator extends BaseHandler {
   }
 
   private generatePaginationUtility() {
-    let output = `import { PagingInfo } from '../dto/paging-info.dto';\n\n`;
+    let output = `import { PagingInfo } from '../dto/paging-info.dto';\nimport { PagingQuery } from '../interfaces/paging-query.interface';\n\n`;
 
-    output = `function fillWithDefaultPaging(paging): unknown {\n if (!paging) {\n    return {\n      offset: 0,\n      limit: 10,\n    };\n  }\n\n  if (!paging.offset) {\n    paging.offset = 0;\n  }\n  if (!paging.limit) {\n    paging.limit = 10;\n  }\n  return paging;\n}\n\n`;
+    output += `export function fillWithDefaultPaging(\n  paging: PagingQuery | null | undefined,\n): PagingQuery {\n  if (!paging) {\n    return {\n      offset: 0,\n      limit: 10,\n    };\n  }\n\n  if (!paging.offset) {\n    paging.offset = 0;\n  }\n  if (!paging.limit) {\n    paging.limit = 10;\n  }\n  return paging;\n}\n\n`;
 
-    output += `export function typeormPaging(paging): unknown {\n  paging = fillWithDefaultPaging(paging);\n  return {\n    skip: paging.offset,\n    take: paging.limit,\n  };\n}\n\n`;
-
-    output += `export function pagingResponse(paging:, totalCount): PagingInfo {\n  paging = fillWithDefaultPaging(paging);\n  return {\n    totalCount,\n    currentOffset: paging.offset,\n    currentLimit: paging.limit,\n  };\n}\n`;
+    output += `export function pagingResponse(paging: any, totalCount: number): PagingInfo {\n  paging = fillWithDefaultPaging(paging);\n  return {\n    totalCount,\n    currentOffset: paging.offset,\n    currentLimit: paging.limit,\n  };\n}\n`;
 
     this.outputs['pagination.utility.ts'] = output;
   }
@@ -56,7 +54,7 @@ export class CommonUtilsGenerator extends BaseHandler {
   private generateWordsUtility() {
     const pattern1 = /[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?/\，/\。/\；/\：/\“/\”/\》/\《/\|/\{/\}/\、/\!/\~/\`]/g;
     const pattern2 = /\s+/g;
-    const output = `export function splitWordsBySymbol(value: string): string[] {\n  return value\n    .replace(\n${pattern1},\n      ' ',\n    )\n    .replace(${pattern2}, ' ')\n    .split(' ');\n}\n`;
+    const output = `export function splitWordsBySymbol(value: string): string[] {\n  return value\n    .replace(\n      ${pattern1},\n      ' ',\n    )\n    .replace(${pattern2}, ' ')\n    .split(' ');\n}\n`;
 
     this.outputs['words.utility.ts'] = output;
   }

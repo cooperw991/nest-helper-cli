@@ -1,5 +1,4 @@
 import { createFile } from '../../utils/directory.util';
-import { mkdirOfPath } from '../../utils/directory.util';
 
 export class BaseHandler {
   constructor() {
@@ -13,9 +12,7 @@ export class BaseHandler {
   protected async writeFile(fileName: string, upperDir: string) {
     const { outputs } = this;
 
-    const targetDir = process.cwd() + '.nest-helper-cli/' + upperDir;
-
-    mkdirOfPath(targetDir);
+    const targetDir = process.cwd() + '/.nest-helper-cli/' + upperDir;
 
     await createFile(`${fileName}`, `${targetDir}/`, outputs[fileName], true);
   }
