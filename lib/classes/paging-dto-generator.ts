@@ -1,45 +1,36 @@
-import { EntityJsonInterface } from '../interfaces/entity-json.interface';
-import { createFile } from '../utils/directory.util';
 import { FileGenerator } from './file-generator';
 
 export class PagingDTOGenerator extends FileGenerator {
-  constructor(json: EntityJsonInterface) {
-    super(json);
+  constructor(modelName: string, modelLines: string[][]) {
+    super(modelName, modelLines);
     this.suffix = 'dto';
-    this.output += this.writeTypeGraphqlDependencies();
-    this.output += this.writePagingDto();
-    this.output += this.writeEntity();
-    this.output += this.writeFilterClass();
+
+    this.output = this.writeDependencies() + this.writeClass();
   }
 
   public generateFile() {
-    this.writeFile(this.dasherizePluralizeName + '-with-paging', 'dto');
-    this.createPagingInfoDto();
+    this.writeFile('dto/paging');
   }
 
-  private writeTypeGraphqlDependencies(): string {
-    return `import { Field, ObjectType } from 'type-graphql';\n`;
+  private writeDependencies(): string {
+    const { modelName, moduleName } = this;
+
+    let output = `import { Field, ObjectType } from '@nestjs/graphql';\n`;
+    output += `import { PagingInfo } from '@Dto/paging-info.dto';\n`;
+    output += `import { ${modelName} } from '@Module/${moduleName}/models/${moduleName}.model';\n\n`;
+
+    return output;
   }
 
-  private writePagingDto(): string {
-    return `import { PagingInfo } from '../../../common/dto/paging-info.dto';\n`;
-  }
+  private writeClass(): string {
+    const { uppperCamelPluralizeName, camelPluralizeName, modelName } = this;
 
-  private writeEntity(): string {
-    return `import { ${this.className} } from '../${this.moduleName}.entity';\n\n`;
-  }
+    let output = `@ObjectType()\nexport class ${uppperCamelPluralizeName}WithPaging {\n`;
 
-  private writeFilterClass(): string {
-    const { className, uppperCamelPluralizeName, camelPluralizeName } = this;
+    output += `  @Field(() => [${this.modelName}])\n  ${camelPluralizeName}: ${modelName}[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n`;
 
-    return `@ObjectType()\nexport class ${uppperCamelPluralizeName}WithPaging {\n  @Field(() => [${className}])\n  ${camelPluralizeName}: ${className}[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n}\n`;
-  }
+    output += '}\n';
 
-  private async createPagingInfoDto() {
-    const dirPath = process.cwd() + '/src/common/dto/';
-
-    const output = `import { Field, ObjectType, Int } from 'type-graphql';\n\n@ObjectType()\nexport class PagingInfo {\n  @Field(() => Int)\n  totalCount: number;\n\n  @Field(() => Int)\n  currentOffset: number;\n\n  @Field(() => Int)\n  currentLimit: number;\n}\n`;
-
-    await createFile('paging-info.dto.ts', dirPath, output);
+    return output;
   }
 }

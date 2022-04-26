@@ -1,11 +1,10 @@
 import { createFile } from '../utils/directory.util';
-import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 
 import { BaseHandler } from './base-handler';
 
 export class FileGenerator extends BaseHandler {
-  constructor(json: EntityJsonInterface) {
-    super(json);
+  constructor(modelName: string, modelLines: string[][]) {
+    super(modelName, modelLines);
   }
 
   public async writeFile(fileName: string, upperDir?: string) {
@@ -15,5 +14,7 @@ export class FileGenerator extends BaseHandler {
       : process.cwd() + '/src' + '/modules/' + this.moduleName;
 
     await createFile(`${fileName}.${suffix}.ts`, `${targetDir}/`, output, true);
+
+    console.log(`${fileName}.${suffix}.ts created!`);
   }
 }

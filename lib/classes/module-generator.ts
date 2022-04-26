@@ -1,44 +1,36 @@
-import { EntityJsonInterface } from '../interfaces/entity-json.interface';
 import { FileGenerator } from './file-generator';
 
 export class ModuleGenerator extends FileGenerator {
-  constructor(json: EntityJsonInterface) {
-    super(json);
+  constructor(modelName: string, modelLines: string[][]) {
+    super(modelName, modelLines);
     this.suffix = 'module';
-    this.output += this.writeLibDependencies();
-    this.output += this.writeModuleDependencies();
-    this.output += this.writeModule();
+    this.output += this.writeDependencies();
+    this.output += this.writeClass();
   }
+
+  protected idType: string;
 
   public generateFile() {
     this.writeFile(this.moduleName);
   }
 
-  private writeLibDependencies(): string {
+  private writeDependencies(): string {
+    const { modelName, moduleName } = this;
     let output = `import { Module } from '@nestjs/common';\n`;
-    output += `import { TypeOrmModule } from '@nestjs/typeorm';\n\n`;
+
+    output += `import { ${modelName}Service } from '@Module/${moduleName}/services/${moduleName}.service';\n`;
+    output += `import { ${modelName}Resolver } from '@Module/${moduleName}/resolvers/${moduleName}.resolver';\n`;
 
     return output;
   }
 
-  private writeModuleDependencies(): string {
-    const { className, moduleName } = this;
-    let output = '';
-
-    output += `import { ${className} } from './${moduleName}.entity';\n`;
-    output += `import { ${className}Service } from './${moduleName}.service';\n`;
-    output += `import { ${className}Resolver } from './${moduleName}.resolver';\n\n`;
-
-    return output;
-  }
-
-  private writeModule(): string {
-    const { className } = this;
+  private writeClass(): string {
+    const { modelName } = this;
 
     let output = `@Module({\n`;
-    output += `  imports: [TypeOrmModule.forFeature([${className}])],\n  providers: [${className}Service, ${className}Resolver],\n})\n`;
-
-    output += `export class ${className}Module {}\n`;
+    output += `  providers: [${modelName}Service, ${modelName}Resolver],\n`;
+    output += `  exports: [${modelName}Service],\n`;
+    output += `})\nexport class ${modelName}Module {}\n`;
 
     return output;
   }

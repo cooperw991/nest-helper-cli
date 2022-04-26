@@ -1,6 +1,5 @@
 import * as chalk from 'chalk';
-import * as Table from 'cli-table3';
-import { CommanderStatic } from 'commander';
+import { Command } from 'commander';
 
 import { Input } from '../lib/inputs';
 import { AbstractCommand } from './abstract.command';
@@ -14,23 +13,13 @@ interface Schematic {
 export class GenerateCommand extends AbstractCommand {
   private schematics: Schematic[] = [
     {
-      name: 'json',
-      alias: 'json',
-      description: 'Generate a sample json',
-    },
-    {
       name: 'module',
       alias: 'mo',
       description: 'Generate a new module',
     },
-    {
-      name: 'common',
-      alias: 'co',
-      description: 'Generate common files',
-    },
   ];
 
-  public load(program: CommanderStatic) {
+  public load(program: Command) {
     program
       .command('generate <schematic> [name]')
       .alias('g')
@@ -47,7 +36,7 @@ export class GenerateCommand extends AbstractCommand {
   private buildDescription(): string {
     return (
       'Generate a Nest module.\n' +
-      '  Available schematics:\n' +
+      'Available schematics:\n' +
       this.buildSchematicsListAsTable()
     );
   }
@@ -66,6 +55,7 @@ export class GenerateCommand extends AbstractCommand {
         'right-mid': '',
       },
     };
+    const Table = require('cli-table3');
     const table: any = new Table(tableConfig);
     for (const schematic of this.schematics) {
       table.push([

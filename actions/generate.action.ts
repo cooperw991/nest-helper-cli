@@ -1,25 +1,19 @@
-import { writeFileSync, readFileSync } from 'fs';
-
 import { Input } from '../lib/inputs';
-import { EntityGenerator } from '../lib/classes/entity-generator';
-import { InterfacesGenerator } from '../lib/classes/interfaces-generator';
-import { DTOsGenerator } from '../lib/classes/dtos-generator';
 import { ServiceGenerator } from '../lib/classes/service-generator';
 import { ResolverGenerator } from '../lib/classes/resolver-generator';
-import { ModuleGenerator } from '../lib/classes/module-generator';
-import { TestsGenerator } from '../lib/classes/tests-generator';
-import { CommonDirectoryCreator } from '../lib/classes/common-files/directory-creator';
-import { CommonDecoratorsGenerator } from '../lib/classes/common-files/decorators-generator';
-import { CommonDTOsGenerator } from '../lib/classes/common-files/dto-generator';
-import { CommonGuardsGenerator } from '../lib/classes/common-files/guards-generator';
-import { CommonHelpersGenerator } from '../lib/classes/common-files/helpers-generator';
-import { CommonInterfacesGenerator } from '../lib/classes/common-files/interfaces-generator';
-import { CommonUtilsGenerator } from '../lib/classes/common-files/utils-generator';
-import { AppModuleUpdater } from '../lib/classes/app-module-updater';
-import { DirectoryCreator } from '../lib/classes/directory-creator';
-import { EntityJsonInterface } from '../lib/interfaces/entity-json.interface';
+import { SchemaFileParser } from '../lib/classes/schema-file-parser';
+
 import logger from '../lib/utils/logger.util';
 import { AbstractAction } from './abstract.action';
+import { ModelGenerator } from '../lib/classes/model-generator';
+import { NewInputGenerator } from '../lib/classes/new-input-generator';
+import { EditInputGenerator } from '../lib/classes/edit-input-generator';
+import { FindFilterGenerator } from '../lib/classes/find-filter-generator';
+import { FindOrderGenerator } from '../lib/classes/find-order-generator';
+import { PagingDTOGenerator } from '../lib/classes/paging-dto-generator';
+import { ModuleGenerator } from '../lib/classes/module-generator';
+import { MocksGenerator } from '../lib/classes/mock-data-generator';
+import { ServiceSpecGenerator } from '../lib/classes/service-spec-generator';
 
 export class GenerateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -27,185 +21,70 @@ export class GenerateAction extends AbstractAction {
       return input.name === 'schematic';
     });
 
-    if (schematic.value === 'json') {
-      await this.generateJsonFile(inputs.concat(options));
-    }
-
     if (schematic.value === 'module' || schematic.value === 'mo') {
       await this.generateModuleFiles(inputs.concat(options));
     }
-
-    if (schematic.value === 'common' || schematic.value === 'co') {
-      await this.generateCommonFiles();
-    }
   }
 
-  generateJsonFile = async (inputs: Input[]) => {
-    const sample: EntityJsonInterface = {
-      name: 'sample',
-      prefix: 'sp_',
-      isSoftDelete: false,
-      enums: [
-        {
-          name: 'SampleEnum',
-          description: 'A Sample Enum',
-          values: [
-            {
-              key: 'KEY1',
-              val: 'val1',
-            },
-            {
-              key: 'KEY2',
-              val: 'val2',
-            },
-          ],
-        },
-      ],
-      columns: [
-        {
-          name: 'id',
-          decorator: 'PrimaryGeneratedColumn',
-          type: 'number',
-          options: {
-            type: 'integer',
-            comment: 'Primary gernated column',
-          },
-          api: {
-            create: false,
-            update: false,
-            view: true,
-          },
-        },
-        {
-          name: 'column1',
-          type: 'string',
-          options: {
-            type: 'varchar',
-            length: 150,
-            nullable: false,
-            comment: 'string column1',
-          },
-          api: {
-            create: true,
-            update: false,
-            view: false,
-          },
-        },
-        {
-          name: 'column2',
-          decorator: 'Column',
-          type: 'number',
-          options: {
-            type: 'integer',
-            length: 10,
-            nullable: false,
-            comment: 'int column2',
-          },
-          api: {
-            filter: true,
-          },
-        },
-        {
-          name: 'column3',
-          decorator: 'Column',
-          type: 'SampleEnum',
-          options: {
-            comment: 'enum column3',
-          },
-        },
-        {
-          name: 'column4',
-          decorator: 'Column',
-          type: 'number',
-          options: {
-            type: 'integer',
-            length: 10,
-            array: true,
-            default: '{}',
-            comment: 'int array column4',
-          },
-        },
-      ],
-    };
-
-    const fileNameOption =
-      (inputs.find((option) => option.name === 'name')?.value as string) ||
-      'sample_entity.json';
-
-    writeFileSync(process.cwd() + `/${fileNameOption}`, JSON.stringify(sample));
-  };
-
   generateModuleFiles = async (inputs: Input[]) => {
-    const fileName =
-      (inputs.find((input) => input.name === 'name')?.value as string) ||
-      'sample_entity.json';
+    const modelName = inputs.find((input) => input.name === 'name')
+      ?.value as string;
 
-    let jsonData;
-
-    try {
-      jsonData = JSON.parse(
-        readFileSync(process.cwd() + `/${fileName}`).toString(),
-      );
-    } catch (e) {
-      console.log(process.cwd() + `/${fileName}`);
-      logger.info('entity json file not found!');
+    if (!modelName) {
+      logger.error('param incrrect!');
+      throw new Error();
     }
 
-    const directoryCreator = new DirectoryCreator(jsonData);
-    const entityGenerator = new EntityGenerator(jsonData);
+    const parser = new SchemaFileParser();
 
-    const interfacesGenerator = new InterfacesGenerator(jsonData);
+    await parser.init(modelName);
 
-    const dtosGenerator = new DTOsGenerator(jsonData);
+    await parser.parseEnums();
 
-    const serviceGenerator = new ServiceGenerator(jsonData);
+    const modelLines = parser.targetModel;
+    const enums = parser.enums;
 
-    const resolverGenerator = new ResolverGenerator(jsonData);
+    console.log(enums);
 
-    const moduleGenerator = new ModuleGenerator(jsonData);
-
-    const testsGenerator = new TestsGenerator(jsonData);
-
-    const appModuleUpdater = new AppModuleUpdater(jsonData);
-
-    await directoryCreator.createModulePath();
+    const modelGenerator = new ModelGenerator(modelName, modelLines);
+    const serviceGenerator = new ServiceGenerator(modelName, modelLines);
+    const resolverGenerator = new ResolverGenerator(modelName, modelLines);
+    const newInputGenerator = new NewInputGenerator(
+      modelName,
+      modelLines,
+      enums,
+    );
+    const editInputGenerator = new EditInputGenerator(
+      modelName,
+      modelLines,
+      enums,
+    );
+    const findFilterGenerator = new FindFilterGenerator(
+      modelName,
+      modelLines,
+      enums,
+    );
+    const findOrderGenerator = new FindOrderGenerator(modelName, modelLines);
+    const pagingDTOGenerator = new PagingDTOGenerator(modelName, modelLines);
+    const moduleGenerator = new ModuleGenerator(modelName, modelLines);
+    const mocksGenerator = new MocksGenerator(modelName, modelLines, enums);
+    const serviceSpecGenerator = new ServiceSpecGenerator(
+      modelName,
+      modelLines,
+    );
 
     await Promise.all([
-      entityGenerator.generateFile(),
-      interfacesGenerator.generateFiles(),
-      dtosGenerator.generateFiles(),
+      modelGenerator.generateFile(),
       serviceGenerator.generateFile(),
       resolverGenerator.generateFile(),
+      newInputGenerator.generateFile(),
+      editInputGenerator.generateFile(),
+      findFilterGenerator.generateFile(),
+      findOrderGenerator.generateFile(),
+      pagingDTOGenerator.generateFile(),
       moduleGenerator.generateFile(),
-      testsGenerator.generateFiles(),
-      appModuleUpdater.updateAppModuleFile(),
-    ]);
-  };
-
-  generateCommonFiles = async () => {
-    const commonDirectoryCreator = new CommonDirectoryCreator();
-
-    const decoratorsGenerator = new CommonDecoratorsGenerator();
-
-    const dtoGenerator = new CommonDTOsGenerator();
-
-    const guardsGenerator = new CommonGuardsGenerator();
-
-    const helpersGenerator = new CommonHelpersGenerator();
-
-    const interfacesGenerator = new CommonInterfacesGenerator();
-
-    const utilsGenerator = new CommonUtilsGenerator();
-
-    await commonDirectoryCreator.createModulePath();
-
-    await Promise.all([
-      decoratorsGenerator.generateFiles(),
-      dtoGenerator.generateFiles(),
-      guardsGenerator.generateFiles(),
-      helpersGenerator.generateFiles(),
-      interfacesGenerator.generateFiles(),
-      utilsGenerator.generateFiles(),
+      mocksGenerator.generateFile(),
+      serviceSpecGenerator.generateFile(),
     ]);
   };
 }

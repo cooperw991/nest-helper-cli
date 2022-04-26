@@ -2,6 +2,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export async function mkdirOfPath(dir: string) {
+  if (fs.existsSync(dir)) {
+    return true;
+  }
   const tempstats: boolean = await new Promise((resolve) => {
     fs.stat(dir, (err, stats) => {
       if (err) {

@@ -1,152 +1,108 @@
-import { EntityJsonInterface } from '../interfaces/entity-json.interface';
+import * as R from 'ramda';
+
 import { FileGenerator } from './file-generator';
 
 export class ResolverGenerator extends FileGenerator {
-  constructor(json: EntityJsonInterface) {
-    super(json);
+  constructor(modelName: string, modelLines: string[][]) {
+    super(modelName, modelLines);
     this.suffix = 'resolver';
-    this.servName = this.variableName + 'Serv';
-    this.output += this.writeLibDependencies();
-    this.output += this.writeHelperDependencies();
-    this.output += this.writeResolver();
+    this.enums = [];
+    this.getIdType();
+    this.output += this.writeDependencies();
+    this.output += this.writeClass();
   }
 
-  private servName: string;
+  protected enums: string[];
+  protected idType: string;
+  protected gqlType: string;
 
   public generateFile() {
-    this.writeFile(this.moduleName);
+    this.writeFile('resolvers/' + this.moduleName);
   }
 
-  private writeLibDependencies(): string {
-    let output = `import {\n  Resolver,\n  Query,\n  Args,\n  Mutation,\n  ResolveProperty,\n  Context,\n  Root,\n} from '@nestjs/graphql';\n`;
+  private writeDependencies(): string {
+    const { modelName, moduleName, uppperCamelPluralizeName } = this;
+    let output = `import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';\n\n`;
+    output += `import { UserEntity } from '@Decorator/user.decorator';\nimport { PagingQuery } from '@Dto/paging-query.input';\n`;
+    output += `import { User as UserModel } from '@Module/user/models/user.model';\n`;
 
-    output += `import { Inject, UseGuards } from '@nestjs/common';\n`;
-    output += `import { Int } from 'type-graphql';\n\n`;
+    output += `import { ${modelName} } from '../models/${moduleName}.model';\n`;
+    output += `import { New${modelName}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}FindFilter } from '../dto/find-filter.input';\nimport { ${uppperCamelPluralizeName}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.dto';\nimport { ${modelName}Service } from '../services/${moduleName}.service';\n\n`;
 
     return output;
   }
 
-  private writeHelperDependencies(): string {
-    const {
-      uppperCamelPluralizeName,
-      className,
-      moduleName,
-      dasherizePluralizeName,
-    } = this;
-    let output = '';
+  private writeClass(): string {
+    const { modelName } = this;
 
-    output += `import { Me } from '../../common/decorators/me.decorator';\n`;
-
-    output += `import { CreatorAndModifier } from '../../common/dto/creator-and-modifier.dto;\n`;
-
-    output += `import { GqlAuthGuard } from '../../common/guards/gql-auth.guard';\n`;
-
-    output += `import { PagingQuery } from '../../common/interfaces/paging-query.interface';\n`;
-
-    output += `import { AppGraphqlContext } from '../../common/interfaces/app-graphql-context.interface';\n\n`;
-
-    output += `import { User } from '../user/user.entity';\n\n`;
-
-    output += `import { ${uppperCamelPluralizeName}WithPaging } from './dto/${dasherizePluralizeName}-with-paging.dto';\n`;
-
-    output += `import { Create${className}Input } from './interfaces/create-${moduleName}.interface';\n`;
-
-    output += `import { Update${className}Input } from './interfaces/update-${moduleName}.interface';\n`;
-
-    output += `import { ${uppperCamelPluralizeName}Filter } from './interfaces/filterby-${moduleName}.interface';\n`;
-
-    output += `import { ${uppperCamelPluralizeName}Order } from './interfaces/orderby-${moduleName}.interface';\n`;
-
-    output += `import { ${className} } from './${moduleName}.entity';\n`;
-
-    output += `import { ${className}Service } from './${moduleName}.service';\n\n`;
-
-    return output;
-  }
-
-  private writeResolver(): string {
-    const { className, servName } = this;
-    let output = `@Resolver(() => ${className})\nexport class ${className}Resolver {\n`;
-
-    output += `  constructor(\n    @Inject(${className}Service) private readonly ${servName}: ${className}Service,\n  ) {}\n\n`;
-
-    output += this.writeFindOneMethod();
-    output += this.writeListMethod();
+    let output = `@Resolver(() => ${modelName})\nexport class ${modelName}Resolver {\n`;
+    output += this.writeConstructor();
+    output += this.writeFindMethod();
+    output += this.writeFilterMethod();
     output += this.writeCreateMethod();
     output += this.writeUpdateMethod();
     output += this.writeDeleteMethod();
-    output += this.writeProperties();
+    output += `}\n`;
 
-    output = output.replace(/\n$/gi, `}\n`);
+    return output;
+  }
+
+  private writeConstructor(): string {
+    const { variableName, modelName } = this;
+    const output = `  constructor(private ${variableName}Service: ${modelName}Service) {}\n\n`;
+    return output;
+  }
+
+  private writeFindMethod(): string {
+    const { modelName, variableName, idType, gqlType } = this;
+
+    let output = `  @Query(() => ${modelName})\n`;
+    output += `  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
+
+    return output;
+  }
+
+  private writeFilterMethod(): string {
+    const { variableName, uppperCamelPluralizeName } = this;
+
+    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging)\n`;
+    output += `  async find${uppperCamelPluralizeName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'where', type: () => ${uppperCamelPluralizeName}FindFilter, nullable: true })\n    where: ${uppperCamelPluralizeName}FindFilter,\n    @Args({ name: 'order', type: () => [${uppperCamelPluralizeName}FindOrder], nullable: true })\n    order: ${uppperCamelPluralizeName}FindOrder[],\n    @Args({ name: 'paging', type: () => PagingQuery, nullable: true })\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n    return this.${variableName}Service.find${uppperCamelPluralizeName}(where, order, paging);\n  }\n\n`;
+
     return output;
   }
 
   private writeCreateMethod(): string {
-    const { servName, className, variableName } = this;
+    const { modelName, variableName } = this;
 
-    let output = `  @Mutation(() => ${className}, {\n    description: 'Create new ${variableName}',\n  })\n`;
-
-    output += `  @UseGuards(GqlAuthGuard)\n`;
-    output += `  async create${className}(\n    @Me() me: User,\n    @Args({\n      name: 'createInput',\n      type: () => Create${className}Input,\n    })\n    createInput: Create${className}Input,\n  ): Promise<${className}> {\n    return this.${servName}.create(me, createInput);\n  }\n\n`;
+    let output = `  @Mutation(() => ${modelName})\n`;
+    output += `  async create${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'input', type: () => New${modelName}Input }) input: New${modelName}Input,\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.create${modelName}(input);\n  }\n\n`;
 
     return output;
   }
 
   private writeUpdateMethod(): string {
-    const { servName, className, variableName } = this;
+    const { modelName, variableName, idType, gqlType } = this;
 
-    let output = `  @Mutation(() => ${className}, {\n    description: 'Update ${variableName}',\n  })\n`;
-
-    output += `  @UseGuards(GqlAuthGuard)\n`;
-    output += `  async update${className}(\n    @Me() me: User,\n    @Args({\n      name: '${variableName}Id',\n      type: () => Int,\n    })\n    ${variableName}Id: number,\n    @Args({\n      name: 'updateInput',\n      type: () => Update${className}Input,\n    })\n    updateInput: Update${className}Input,\n  ): Promise<${className}> {\n    return this.${servName}.update(me, ${variableName}Id, updateInput);\n  }\n\n`;
+    let output = `  @Mutation(() => ${modelName})\n`;
+    output += `  async update${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n    @Args({ name: 'input', type: () => Edit${modelName}Input }) input: Edit${modelName}Input,\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.update${modelName}(${variableName}Id, input);\n  }\n\n`;
 
     return output;
   }
 
   private writeDeleteMethod(): string {
-    const {
-      servName,
-      className,
-      variableName,
-      data: { isSoftDelete },
-    } = this;
+    const { modelName, variableName, idType, gqlType } = this;
 
-    let output = `  @Mutation(() => Boolean, {\n    description: 'Delete ${variableName}',\n  })\n`;
-
-    const methodName = isSoftDelete ? 'softDelete' : 'delete';
-
-    output += `  @UseGuards(GqlAuthGuard)\n`;
-    output += `  async delete${className}(\n    @Me() me: User,\n    @Args({\n      name: '${variableName}Id',\n      type: () => Int,\n    })\n    ${variableName}Id: number,\n  ): Promise<boolean> {\n    return this.${servName}.${methodName}(me, ${variableName}Id);\n  }\n\n`;
+    let output = `  @Mutation(() => Boolean)\n`;
+    output += `  async delete${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<boolean> {\n    return this.${variableName}Service.delete${modelName}(${variableName}Id);\n  }\n`;
 
     return output;
   }
 
-  private writeFindOneMethod(): string {
-    const { servName, className, variableName } = this;
+  private getIdType() {
+    const { data } = this;
 
-    let output = `  @Query(() => ${className}, {\n    description: 'Query ${variableName} Record',\n  })\n`;
-
-    output += `  @UseGuards(GqlAuthGuard)\n`;
-    output += `  async get${className}(\n    @Me() me: User,\n    @Args({\n      name: '${variableName}Id',\n      type: () => Int,\n    })\n    ${variableName}Id: number,\n  ): Promise<${className}> {\n    return this.${servName}.findOne(me, ${variableName}Id);\n  }\n\n`;
-
-    return output;
-  }
-
-  private writeListMethod(): string {
-    const { servName, variableName, uppperCamelPluralizeName } = this;
-
-    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging, {\n    description: 'List ${variableName} Records',\n  })\n`;
-
-    output += `  @UseGuards(GqlAuthGuard)\n`;
-
-    output += `  async list${uppperCamelPluralizeName}(\n    @Me() me: User,\n    @Args({\n      name: 'filter',\n      type: () => ${uppperCamelPluralizeName}Filter,\n      nullable: true,\n    })\n    filter: ${uppperCamelPluralizeName}Filter,\n    @Args({\n      name: 'order',\n      type: () => ${uppperCamelPluralizeName}Order,\n      nullable: true,\n    })\n    order: ${uppperCamelPluralizeName}Order,\n    @Args({\n      name: 'paging',\n      type: () => PagingQuery,\n      nullable: true,\n    })\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n    return this.${servName}.list(me, paging, filter, order);\n  }\n\n`;
-
-    return output;
-  }
-
-  private writeProperties(): string {
-    const { variableName } = this;
-
-    return `  @ResolveProperty('creatorAndLastModifier', () => User)\n  async creatorAndLastModifier(\n    @Root() ${variableName}: ${this.className},\n    @Context() ctx: AppGraphqlContext,\n  ): Promise<CreatorAndModifier> {\n    return ctx.creatorAndModifierLoader.load([\n      ${variableName}.createdById,\n      ${variableName}.updatedById,\n    ]);\n  }\n\n`;
+    const idLine = data.find((line) => R.includes('@id', line)) || [];
+    this.idType = idLine[1] === 'String' ? 'string' : 'number';
+    this.gqlType = idLine[1] ?? 'Int';
   }
 }

@@ -1,12 +1,11 @@
 #! /usr/bin/env node
-import * as commander from 'commander';
-import { CommanderStatic } from 'commander';
+import { Command } from 'commander';
 
 import { GenerateCommand } from '../commands/generate.command';
 import { GenerateAction } from '../actions/generate.action';
 
 const bootstrap = () => {
-  const program: CommanderStatic = commander;
+  const program = new Command();
   program
     .version(
       require('../package.json').version,
