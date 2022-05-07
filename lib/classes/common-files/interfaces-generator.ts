@@ -8,9 +8,9 @@ export class CommonInterfacesGenerator extends BaseHandler {
     this.generatePagingQueryInterface();
   }
 
-  public generateFiles() {
-    this.writeFile('app-graphql-context.interface.ts', 'interfaces');
-    this.writeFile('paging-query.interface.ts', 'interfaces');
+  public async generateFiles() {
+    await this.writeFile('app-graphql-context.interface.ts', 'interfaces');
+    await this.writeFile('paging-query.interface.ts', 'interfaces');
   }
 
   private generateGqlContextInterface() {

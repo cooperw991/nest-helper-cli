@@ -22,8 +22,8 @@ export class MocksGenerator extends FileGenerator {
     this.output = output;
   }
 
-  public generateFile() {
-    this.writeFile('fake/' + this.moduleName);
+  public async generateFile() {
+    await this.writeFile('fake/' + this.moduleName);
   }
 
   private rdmArr(str: string): string {
@@ -31,11 +31,11 @@ export class MocksGenerator extends FileGenerator {
   }
 
   private rdmNum(str = ''): string {
-    return 'faker.random.number(' + str + ')';
+    return 'faker.datatype.number(' + str + ')';
   }
 
   private rdmStr(): string {
-    return 'faker.lorem.word()';
+    return 'faker.lorem.words()';
   }
 
   private rdmBool(): string {
@@ -56,8 +56,6 @@ export class MocksGenerator extends FileGenerator {
 
   private rdmEnum(enumName: string): string {
     const { enumObjects } = this;
-
-    console.log(enumName, enumObjects);
 
     const _enum = enumObjects.find((enu) => enu.name === enumName);
 
@@ -81,8 +79,8 @@ export class MocksGenerator extends FileGenerator {
 
   private writeInputData(): string {
     const { modelName, data } = this;
-    let output1 = `export const new${modelName}Input: New${modelName}Input = {\n`;
-    let output2 = `export const edit${modelName}Input: Edit${modelName}Input = {\n`;
+    let output1 = `export const new${modelName}Input = {\n`;
+    let output2 = `export const edit${modelName}Input = {\n`;
 
     for (const line of data) {
       const field = line[0];
@@ -91,7 +89,16 @@ export class MocksGenerator extends FileGenerator {
         continue;
       }
 
-      if (R.includes(field, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
+      if (
+        R.includes(field, [
+          'id',
+          'createdAt',
+          'updatedAt',
+          'deletedAt',
+          'creatorId',
+          'modifierId',
+        ])
+      ) {
         continue;
       }
 
@@ -116,18 +123,20 @@ export class MocksGenerator extends FileGenerator {
     let output2 = `export const updated${modelName}: ${modelName} = {\n`;
     let output3 = `export const deleted${modelName}: ${modelName} = {\n`;
 
+    const idValue = this.checkIdType();
+
     output1 += `  ...new${modelName}Input,\n`;
-    output1 += `  id: faker.random.alpha(10),\n  createdAt: new Date(),\n  updatedAt: new Date(),\n  deletedAt: null,\n};\n\n`;
+    output1 += `  id: ${idValue},\n  creatorId,\n  modifierId: creatorId,\n  createdAt: new Date(),\n  updatedAt: new Date(),\n  deletedAt: null,\n};\n\n`;
 
-    output2 += `  ...created${modelName},\n  ...edit${modelName}Input,\n};\n\n`;
+    output2 += `  ...created${modelName},\n  ...edit${modelName}Input,\n  modifierId,\n};\n\n`;
 
-    output3 += `  ...created${modelName},\n  deletedAt: new Date(),\n};\n`;
+    output3 += `  ...created${modelName},\n  deletedAt: new Date(),\n  modifierId,\n};\n`;
 
     return output1 + output2 + output3;
   }
 
   private writeInterfaces(): string {
-    const { modelName, moduleName, enumObjects } = this;
+    const { modelName, enumObjects } = this;
 
     let output = `import { ${modelName},`;
     for (const enu of enumObjects) {
@@ -136,8 +145,8 @@ export class MocksGenerator extends FileGenerator {
     output = R.dropLast(1, output);
     output += ` } from '@prisma/client';\n\n`;
 
-    output += `import { New${modelName}Input } from '@Module/${moduleName}/dto/new-${moduleName}.input';\n`;
-    output += `import { Edit${modelName}Input } from '@Module/${moduleName}/dto/edit-${moduleName}.input';\n\n`;
+    output += `export const creatorId = faker.datatype.number();\n`;
+    output += `export const modifierId = faker.datatype.number();\n\n`;
 
     return output;
   }
@@ -165,11 +174,22 @@ export class MocksGenerator extends FileGenerator {
       case 'Unsupported':
         return '';
       default:
-        console.log(keywords);
         if (type.indexOf('@relation') === -1) {
           return this.rdmEnum(type);
         }
         return '';
+    }
+  }
+
+  private checkIdType(): string {
+    const { data } = this;
+
+    for (const line of data) {
+      if (line[0] === 'id') {
+        return line[1] === 'String'
+          ? 'faker.random.alpha(10)'
+          : 'faker.datatype.number()';
+      }
     }
   }
 }

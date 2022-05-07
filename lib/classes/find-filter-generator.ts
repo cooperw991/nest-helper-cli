@@ -8,9 +8,11 @@ export class FindFilterGenerator extends FileGenerator {
     modelName: string,
     modelLines: string[][],
     enumObjects: EnumObject[],
+    models: string[],
   ) {
     super(modelName, modelLines);
     this.suffix = 'input';
+    this.models = models;
     this.output += this.writeClass();
     this.enumObjects = enumObjects;
 
@@ -20,12 +22,17 @@ export class FindFilterGenerator extends FileGenerator {
     this.output = this.writeDependencies() + this.output;
   }
 
-  public generateFile() {
-    this.writeFile('dto/find-filter');
+  public async generateFile() {
+    await this.writeFile('dto/find-filter');
   }
 
   private writeDependencies(): string {
-    const output = `import { InputType, Field } from '@nestjs/graphql';\n\n`;
+    const { gqlTypes } = this;
+    let output = `import { Field, InputType`;
+    for (const gqlType of gqlTypes) {
+      output += `, ${gqlType}`;
+    }
+    output += ` } from '@nestjs/graphql';\n\n`;
 
     return output;
   }
@@ -78,7 +85,11 @@ export class FindFilterGenerator extends FileGenerator {
       return '';
     }
 
-    const [gqlType, fieldType] = this.parseFieldType(type, keywords);
+    if (R.includes(type, this.models)) {
+      return '';
+    }
+
+    const [gqlType, fieldType] = this.parseFieldType(type);
 
     let output = `  @Field(() => ${gqlType}, {\n    nullable: true,\n  })\n`;
 

@@ -8,9 +8,11 @@ export class NewInputGenerator extends FileGenerator {
     modelName: string,
     modelLines: string[][],
     enumObjects: EnumObject[],
+    models: string[],
   ) {
     super(modelName, modelLines);
     this.suffix = 'input';
+    this.models = models;
     this.output += this.writeClass();
     this.enumObjects = enumObjects;
 
@@ -20,12 +22,19 @@ export class NewInputGenerator extends FileGenerator {
     this.output = this.writeDependencies() + this.output;
   }
 
-  public generateFile() {
-    this.writeFile('dto/new-' + this.moduleName);
+  private _enums: string[];
+
+  public async generateFile() {
+    await this.writeFile('dto/new-' + this.moduleName);
   }
 
   private writeDependencies(): string {
-    const output = `import { InputType, Field } from '@nestjs/graphql';\n\n`;
+    const { gqlTypes } = this;
+    let output = `import { Field, InputType`;
+    for (const gqlType of gqlTypes) {
+      output += `, ${gqlType}`;
+    }
+    output += ` } from '@nestjs/graphql';\n\n`;
 
     return output;
   }
@@ -68,7 +77,16 @@ export class NewInputGenerator extends FileGenerator {
       return '';
     }
 
-    if (R.includes(fieldName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
+    if (
+      R.includes(fieldName, [
+        'id',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+        'creatorId',
+        'modifierId',
+      ])
+    ) {
       return '';
     }
 
@@ -82,7 +100,11 @@ export class NewInputGenerator extends FileGenerator {
       isArray = true;
     }
 
-    const [gqlType, fieldType] = this.parseFieldType(type, keywords);
+    if (R.includes(type, this.models)) {
+      return '';
+    }
+
+    const [gqlType, fieldType] = this.parseFieldType(type);
 
     let output = isArray
       ? `  @Field(() => [${gqlType}]`

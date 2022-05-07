@@ -7,8 +7,8 @@ export class CommonGuardsGenerator extends BaseHandler {
     this.outputs['gql-auth.guard.ts'] = this.generateGuardGqlAuth();
   }
 
-  public generateFiles() {
-    this.writeFile('gql-auth.guard.ts', 'guards');
+  public async generateFiles() {
+    await this.writeFile('gql-auth.guard.ts', 'guards');
   }
 
   private generateGuardGqlAuth() {

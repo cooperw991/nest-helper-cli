@@ -4,9 +4,10 @@ import * as inflected from 'inflected';
 import { FileGenerator } from './file-generator';
 
 export class FindOrderGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][]) {
+  constructor(modelName: string, modelLines: string[][], models: string[]) {
     super(modelName, modelLines);
     this.suffix = 'input';
+    this.models = models;
 
     this.output =
       this.writeDependencies() +
@@ -15,8 +16,8 @@ export class FindOrderGenerator extends FileGenerator {
       this.writeClass();
   }
 
-  public generateFile() {
-    this.writeFile('dto/find-order');
+  public async generateFile() {
+    await this.writeFile('dto/find-order');
   }
 
   private writeDependencies(): string {
@@ -76,6 +77,10 @@ export class FindOrderGenerator extends FileGenerator {
     }
 
     if (type.indexOf('[]') !== -1) {
+      return '';
+    }
+
+    if (R.includes(type, this.models)) {
       return '';
     }
 

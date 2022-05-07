@@ -8,9 +8,11 @@ export class EditInputGenerator extends FileGenerator {
     modelName: string,
     modelLines: string[][],
     enumObjects: EnumObject[],
+    models: string[],
   ) {
     super(modelName, modelLines);
     this.suffix = 'input';
+    this.models = models;
     this.output += this.writeClass();
     this.enumObjects = enumObjects;
 
@@ -20,12 +22,17 @@ export class EditInputGenerator extends FileGenerator {
     this.output = this.writeDependencies() + this.output;
   }
 
-  public generateFile() {
-    this.writeFile('dto/edit-' + this.moduleName);
+  public async generateFile() {
+    await this.writeFile('dto/edit-' + this.moduleName);
   }
 
   private writeDependencies(): string {
-    const output = `import { InputType, Field } from '@nestjs/graphql';\n\n`;
+    const { gqlTypes } = this;
+    let output = `import { Field, InputType`;
+    for (const gqlType of gqlTypes) {
+      output += `, ${gqlType}`;
+    }
+    output += ` } from '@nestjs/graphql';\n\n`;
 
     return output;
   }
@@ -59,6 +66,7 @@ export class EditInputGenerator extends FileGenerator {
   }
 
   private writeField(keywords: string[]): string {
+    const { models } = this;
     const fieldName = keywords[0];
     let type = keywords[1];
     let isArray = false;
@@ -67,7 +75,16 @@ export class EditInputGenerator extends FileGenerator {
       return '';
     }
 
-    if (R.includes(fieldName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
+    if (
+      R.includes(fieldName, [
+        'id',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+        'creatorId',
+        'modifierId',
+      ])
+    ) {
       return '';
     }
 
@@ -80,7 +97,11 @@ export class EditInputGenerator extends FileGenerator {
       isArray = true;
     }
 
-    const [gqlType, fieldType] = this.parseFieldType(type, keywords);
+    if (R.includes(type, models)) {
+      return '';
+    }
+
+    const [gqlType, fieldType] = this.parseFieldType(type);
 
     let output = isArray
       ? `  @Field(() => [${gqlType}]`

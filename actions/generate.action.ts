@@ -14,6 +14,7 @@ import { PagingDTOGenerator } from '../lib/classes/paging-dto-generator';
 import { ModuleGenerator } from '../lib/classes/module-generator';
 import { MocksGenerator } from '../lib/classes/mock-data-generator';
 import { ServiceSpecGenerator } from '../lib/classes/service-spec-generator';
+import { AppModuleFileParser } from '../lib/classes/app-module-file-parser';
 
 export class GenerateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -39,32 +40,47 @@ export class GenerateAction extends AbstractAction {
 
     await parser.init(modelName);
 
-    await parser.parseEnums();
+    await Promise.all([parser.parseEnums(), parser.parseModelNames()]);
 
     const modelLines = parser.targetModel;
     const enums = parser.enums;
+    const models = parser.models;
 
-    console.log(enums);
-
-    const modelGenerator = new ModelGenerator(modelName, modelLines);
+    const modelGenerator = new ModelGenerator(
+      modelName,
+      modelLines,
+      enums,
+      models,
+    );
     const serviceGenerator = new ServiceGenerator(modelName, modelLines);
-    const resolverGenerator = new ResolverGenerator(modelName, modelLines);
+    const resolverGenerator = new ResolverGenerator(
+      modelName,
+      modelLines,
+      models,
+    );
     const newInputGenerator = new NewInputGenerator(
       modelName,
       modelLines,
       enums,
+      models,
     );
     const editInputGenerator = new EditInputGenerator(
       modelName,
       modelLines,
       enums,
+      models,
     );
     const findFilterGenerator = new FindFilterGenerator(
       modelName,
       modelLines,
       enums,
+      models,
     );
-    const findOrderGenerator = new FindOrderGenerator(modelName, modelLines);
+    const findOrderGenerator = new FindOrderGenerator(
+      modelName,
+      modelLines,
+      models,
+    );
     const pagingDTOGenerator = new PagingDTOGenerator(modelName, modelLines);
     const moduleGenerator = new ModuleGenerator(modelName, modelLines);
     const mocksGenerator = new MocksGenerator(modelName, modelLines, enums);
@@ -73,18 +89,26 @@ export class GenerateAction extends AbstractAction {
       modelLines,
     );
 
-    await Promise.all([
-      modelGenerator.generateFile(),
-      serviceGenerator.generateFile(),
-      resolverGenerator.generateFile(),
-      newInputGenerator.generateFile(),
-      editInputGenerator.generateFile(),
-      findFilterGenerator.generateFile(),
-      findOrderGenerator.generateFile(),
-      pagingDTOGenerator.generateFile(),
-      moduleGenerator.generateFile(),
-      mocksGenerator.generateFile(),
-      serviceSpecGenerator.generateFile(),
-    ]);
+    await modelGenerator.generateFile();
+    await serviceGenerator.generateFile();
+    await resolverGenerator.generateFile();
+    await newInputGenerator.generateFile();
+    await editInputGenerator.generateFile();
+    await findFilterGenerator.generateFile();
+    await findOrderGenerator.generateFile();
+    await pagingDTOGenerator.generateFile();
+    await moduleGenerator.generateFile();
+    await mocksGenerator.generateFile();
+    await serviceSpecGenerator.generateFile();
+
+    await this.updateAppModuleFile(modelName);
+  };
+
+  updateAppModuleFile = async (modelName: string) => {
+    const appModuleParser = new AppModuleFileParser();
+
+    await appModuleParser.init(modelName);
+    await appModuleParser.updateAppModuleFile();
+    await appModuleParser.writeFile();
   };
 }

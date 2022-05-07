@@ -9,6 +9,7 @@ export class BaseHandler {
     this.data = modelLines;
     this.output = '';
     this.enums = [];
+    this.gqlTypes = [];
 
     this.initNames();
   }
@@ -25,6 +26,8 @@ export class BaseHandler {
   protected upperUnderscoreName: string;
   protected enums: string[];
   protected enumObjects: EnumObject[];
+  protected gqlTypes: string[];
+  protected models: string[];
 
   private initNames() {
     // 类名称：首字母大写，驼峰
@@ -56,13 +59,14 @@ export class BaseHandler {
       .toUpperCase();
   }
 
-  protected parseFieldType(type: string, keywords: string[]): [string, string] {
+  protected parseFieldType(type: string): [string, string] {
     switch (type) {
       case 'String':
         return ['String', 'string'];
       case 'Boolean':
         return ['Boolean', 'boolean'];
       case 'Int':
+        this.gqlTypes = [...new Set([...this.gqlTypes, 'Int'])];
         return ['Int', 'number'];
       case 'BigInt':
         return ['Float', 'number'];
@@ -79,7 +83,7 @@ export class BaseHandler {
       case 'Unsupported':
         return ['String', 'string'];
       default:
-        if (keywords[2] && keywords[2].indexOf('@relation') === -1) {
+        if (!R.includes(type, this.models)) {
           this.enums.push(type);
         }
         return [type, type];

@@ -13,8 +13,8 @@ export class ServiceGenerator extends FileGenerator {
 
   protected idType: string;
 
-  public generateFile() {
-    this.writeFile('services/' + this.moduleName);
+  public async generateFile() {
+    await this.writeFile('services/' + this.moduleName);
   }
 
   private writeDependencies(): string {
@@ -29,6 +29,7 @@ export class ServiceGenerator extends FileGenerator {
     output += `import { pagingResponse, prismaPaging } from '@Util/pagination.util';\n`;
     output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n\n`;
 
+    output += `import { LogService } from '@Module/log/services/log.service';\n`;
     output += `import { ${modelName} } from '@prisma/client';\n`;
     output += `import { New${modelName}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}FindFilter } from '../dto/find-filter.input';\nimport { ${uppperCamelPluralizeName}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.dto';\n\n`;
 
@@ -51,10 +52,14 @@ export class ServiceGenerator extends FileGenerator {
   }
 
   private writeConstructor(): string {
+    const { moduleName } = this;
     let output = `  constructor(\n`;
     output += `    private prisma: PrismaService,\n`;
     output += `    private readonly i18n: I18nRequestScopeService,\n`;
-    output += `  ) {}\n\n`;
+    output += `    private readonly logService: LogService,\n`;
+    output += `  ) {\n    this.moduleName = '${moduleName}';\n  }\n\n`;
+
+    output += `  public moduleName: string;\n\n`;
     return output;
   }
 
@@ -62,7 +67,7 @@ export class ServiceGenerator extends FileGenerator {
     const { modelName, variableName, idType } = this;
 
     let output = `  async find${modelName}(${variableName}Id: ${idType}): Promise<${modelName}> {\n`;
-    output += `    const ${variableName} = this.prisma.${variableName}.FindFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: {\n          equals: null,\n        },\n      },\n    });\n\n`;
+    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n    });\n\n`;
     output += `    if (!${variableName}) {\n      throw new NotFoundException(\n        await this.i18n.t('general.NOT_FOUND', {\n          args: {\n            model: '${modelName}',\n            condition: 'id',\n            value: ${variableName}Id,\n          },\n        }),\n      );\n    }\n\n`;
     output += `    return ${variableName};\n  }\n\n`;
 
@@ -87,9 +92,15 @@ export class ServiceGenerator extends FileGenerator {
   private writeCreateMethod(): string {
     const { modelName, variableName } = this;
 
-    let output = `  async create${modelName}(input: New${modelName}Input): Promise<${modelName}> {\n`;
+    let output = `  async create${modelName}(input: New${modelName}Input, myId: number): Promise<${modelName}> {\n`;
 
-    output += `    try {\n      const new${modelName} = this.prisma.${variableName}.create({\n        data: {\n          ...input,\n        },\n      });\n      return new${modelName};\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n  }\n\n`;
+    output += `    let new${modelName};\n\n`;
+
+    output += `    try {\n      new${modelName} = this.prisma.${variableName}.create({\n        data: {\n          ...input,\n          creatorId: myId,\n          modifierId: myId,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
+
+    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'create',\n      additionalContent: JSON.stringify(input),\n    });\n\n`;
+
+    output += `    return new${modelName};\n  }\n\n`;
 
     return output;
   }
@@ -97,11 +108,17 @@ export class ServiceGenerator extends FileGenerator {
   private writeUpdateMethod(): string {
     const { modelName, variableName, idType } = this;
 
-    let output = `  async update${modelName}(${variableName}Id: ${idType}, input: Edit${modelName}Input): Promise<${modelName}> {\n`;
+    let output = `  async update${modelName}(\n    ${variableName}Id: ${idType},\n    input: Edit${modelName}Input,\n    myId: number,\n  ): Promise<${modelName}> {\n`;
 
     output += `    await this.find${modelName}(${variableName}Id);\n\n`;
 
-    output += `    try {\n      const new${modelName} = this.prisma.${variableName}.update({\n        data: {\n          ...input,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n      return new${modelName};\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n  }\n\n`;
+    output += `    let new${modelName};\n\n`;
+
+    output += `    try {\n      new${modelName} = this.prisma.${variableName}.update({\n        data: {\n          ...input,\n          modifierId: myId,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
+
+    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'update',\n      additionalContent: JSON.stringify(input),\n    });\n\n`;
+
+    output += `    return new${modelName};\n  }\n\n`;
 
     return output;
   }
@@ -109,13 +126,17 @@ export class ServiceGenerator extends FileGenerator {
   private writeDeleteMethod(): string {
     const { modelName, variableName, idType } = this;
 
-    let output = `  async delete${modelName}(${variableName}Id: ${idType}): Promise<boolean> {\n`;
+    let output = `  async delete${modelName}(${variableName}Id: ${idType}, myId: number): Promise<boolean> {\n`;
 
     output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n      },\n    });\n\n`;
 
     output += `    if (!${variableName}) {\n      return true;\n    }\n\n`;
 
-    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n      return true;\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n  }\n`;
+    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n      await this.prisma.${variableName}.update({\n        data: {\n          modifierId: myId,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
+
+    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'delete',\n      additionalContent: JSON.stringify({}),\n    });\n\n`;
+
+    output += `    return true;\n  }\n`;
 
     return output;
   }

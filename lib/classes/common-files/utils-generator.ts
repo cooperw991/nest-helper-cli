@@ -10,11 +10,11 @@ export class CommonUtilsGenerator extends BaseHandler {
     this.generateWordsUtility();
   }
 
-  public generateFiles() {
-    this.writeFile('errors.utility.ts', 'utils');
-    this.writeFile('logger.utility.ts', 'utils');
-    this.writeFile('pagination.utility.ts', 'utils');
-    this.writeFile('words.utility.ts', 'utils');
+  public async generateFiles() {
+    await this.writeFile('errors.utility.ts', 'utils');
+    await this.writeFile('logger.utility.ts', 'utils');
+    await this.writeFile('pagination.utility.ts', 'utils');
+    await this.writeFile('words.utility.ts', 'utils');
   }
 
   private generateErrorUtility() {
@@ -52,7 +52,8 @@ export class CommonUtilsGenerator extends BaseHandler {
   }
 
   private generateWordsUtility() {
-    const pattern1 = /[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?/\，/\。/\；/\：/\“/\”/\》/\《/\|/\{/\}/\、/\!/\~/\`]/g;
+    const pattern1 =
+      /[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?/\，/\。/\；/\：/\“/\”/\》/\《/\|/\{/\}/\、/\!/\~/\`]/g;
     const pattern2 = /\s+/g;
     const output = `export function splitWordsBySymbol(value: string): string[] {\n  return value\n    .replace(\n      ${pattern1},\n      ' ',\n    )\n    .replace(${pattern2}, ' ')\n    .split(' ');\n}\n`;
 

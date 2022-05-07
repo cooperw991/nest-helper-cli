@@ -8,9 +8,9 @@ export class CommonDTOsGenerator extends BaseHandler {
     this.generateDTOPagingInfo();
   }
 
-  public generateFiles() {
-    this.writeFile('creator-and-modifier.dto.ts', 'dto');
-    this.writeFile('paging-info.dto.ts', 'dto');
+  public async generateFiles() {
+    await this.writeFile('creator-and-modifier.dto.ts', 'dto');
+    await this.writeFile('paging-info.dto.ts', 'dto');
   }
 
   private generateDTOCreatorAndModifier() {

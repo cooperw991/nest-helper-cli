@@ -7,8 +7,8 @@ export class CommonDecoratorsGenerator extends BaseHandler {
     this.outputs['me.decorator.ts'] = this.generateDecoratorMe();
   }
 
-  public generateFiles() {
-    this.writeFile('me.decorator.ts', 'decorators');
+  public async generateFiles() {
+    await this.writeFile('me.decorator.ts', 'decorators');
   }
 
   private generateDecoratorMe() {

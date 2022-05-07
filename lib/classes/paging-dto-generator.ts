@@ -8,8 +8,8 @@ export class PagingDTOGenerator extends FileGenerator {
     this.output = this.writeDependencies() + this.writeClass();
   }
 
-  public generateFile() {
-    this.writeFile('dto/paging');
+  public async generateFile() {
+    await this.writeFile('dto/paging');
   }
 
   private writeDependencies(): string {

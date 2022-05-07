@@ -1,36 +1,49 @@
 import * as R from 'ramda';
 
 import { FileGenerator } from './file-generator';
+import { EnumObject } from '../interfaces/model-enum.interface';
 
 export class ModelGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][]) {
+  constructor(
+    modelName: string,
+    modelLines: string[][],
+    enumObjects: EnumObject[],
+    models: string[],
+  ) {
     super(modelName, modelLines);
     this.suffix = 'model';
+    this.models = models;
     this.output += this.writeModelClass();
+    this.enumObjects = enumObjects;
 
-    if (this.enums.length) {
+    if (this.enumObjects.length) {
       this.output = this.writeEnumDependencies() + this.output;
     }
     this.output = this.writeGqlDependencies() + this.output;
   }
 
-  public generateFile() {
-    this.writeFile('models/' + this.moduleName);
+  public async generateFile() {
+    await this.writeFile('models/' + this.moduleName);
   }
 
   private writeGqlDependencies(): string {
-    let output = `import { Field, ObjectType } from '@nestjs/graphql';\n\n`;
-    output += `import { BaseModel } from '@Model/base.model';`;
+    const { gqlTypes } = this;
+    let output = `import { Field, ObjectType`;
+    for (const gqlType of gqlTypes) {
+      output += `, ${gqlType}`;
+    }
+    output += ` } from '@nestjs/graphql';\n\n`;
+    output += `import { BaseModel } from '@Model/base.model';\n\n`;
 
     return output;
   }
 
   private writeEnumDependencies(): string {
-    const { enums } = this;
+    const { enumObjects } = this;
     let output = `import {`;
 
-    for (const enu of enums) {
-      output += ` ${enu},`;
+    for (const enu of enumObjects) {
+      output += ` ${enu.name},`;
     }
 
     output = R.dropLast(1, output) + ` } from '@prisma/client';\n\n`;
@@ -73,8 +86,21 @@ export class ModelGenerator extends FileGenerator {
       isArray = true;
     }
 
+    if (
+      R.includes(fieldName, [
+        'id',
+        'createdAt',
+        'updatedAt',
+        'deletedAt',
+        'creatorId',
+        'modifierId',
+      ])
+    ) {
+      return '';
+    }
+
     const comment = this.writeFieldComment(keywords);
-    const [gqlType, fieldType] = this.parseFieldType(type, keywords);
+    const [gqlType, fieldType] = this.parseFieldType(type);
 
     let output = `  @Field(() => ${gqlType}`;
 

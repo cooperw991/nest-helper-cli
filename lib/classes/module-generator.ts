@@ -10,8 +10,8 @@ export class ModuleGenerator extends FileGenerator {
 
   protected idType: string;
 
-  public generateFile() {
-    this.writeFile(this.moduleName);
+  public async generateFile() {
+    await this.writeFile(this.moduleName);
   }
 
   private writeDependencies(): string {
@@ -19,7 +19,7 @@ export class ModuleGenerator extends FileGenerator {
     let output = `import { Module } from '@nestjs/common';\n`;
 
     output += `import { ${modelName}Service } from '@Module/${moduleName}/services/${moduleName}.service';\n`;
-    output += `import { ${modelName}Resolver } from '@Module/${moduleName}/resolvers/${moduleName}.resolver';\n`;
+    output += `import { ${modelName}Resolver } from '@Module/${moduleName}/resolvers/${moduleName}.resolver';\n\n`;
 
     return output;
   }

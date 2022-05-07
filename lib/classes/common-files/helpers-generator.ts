@@ -7,8 +7,8 @@ export class CommonHelpersGenerator extends BaseHandler {
     this.outputs['fake-typeorm.helper.ts'] = this.generateFakeTypeorm();
   }
 
-  public generateFiles() {
-    this.writeFile('fake-typeorm.helper.ts', 'helpers');
+  public async generateFiles() {
+    await this.writeFile('fake-typeorm.helper.ts', 'helpers');
   }
 
   private generateFakeTypeorm() {
