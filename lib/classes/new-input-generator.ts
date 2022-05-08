@@ -112,8 +112,8 @@ export class NewInputGenerator extends FileGenerator {
 
     output += isOptional ? `, {\n    nullable: true,\n  })\n` : ')\n';
 
-    output += `  ${fieldName}${isOptional ? '?' : ''}: ${fieldType}${
-      isArray ? '[]' : ''
+    output += `  ${fieldName}: ${fieldType}${isArray ? '[]' : ''}${
+      isOptional ? ' | null' : ''
     };\n\n`;
 
     return output;

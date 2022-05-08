@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import * as inflected from 'inflected';
 
 import { FileGenerator } from './file-generator';
 import { EnumObject } from '../interfaces/model-enum.interface';
@@ -13,14 +14,18 @@ export class ModelGenerator extends FileGenerator {
     super(modelName, modelLines);
     this.suffix = 'model';
     this.models = models;
-    this.output += this.writeModelClass();
+    this.importModels = [];
     this.enumObjects = enumObjects;
+    this.output += this.writeModelClass();
 
     if (this.enumObjects.length) {
       this.output = this.writeEnumDependencies() + this.output;
     }
+    this.output = this.writeImportModels() + this.output;
     this.output = this.writeGqlDependencies() + this.output;
   }
+
+  private importModels: string[];
 
   public async generateFile() {
     await this.writeFile('models/' + this.moduleName);
@@ -55,7 +60,7 @@ export class ModelGenerator extends FileGenerator {
     const { data, modelName } = this;
 
     let output = '@ObjectType()\n';
-    output += `export class ${modelName} extends BaseModel {\n`;
+    output += `export class ${modelName}Model extends BaseModel {\n`;
 
     for (const line of data) {
       output += this.writeField(line);
@@ -71,6 +76,7 @@ export class ModelGenerator extends FileGenerator {
     let type = keywords[1];
     let isOptional = false;
     let isArray = false;
+    let isModel = false;
 
     if (fieldName.indexOf('@') !== -1) {
       return '';
@@ -99,20 +105,35 @@ export class ModelGenerator extends FileGenerator {
       return '';
     }
 
+    if (R.includes(type, this.models)) {
+      isModel = true;
+    }
+
     const comment = this.writeFieldComment(keywords);
     const [gqlType, fieldType] = this.parseFieldType(type);
 
-    let output = `  @Field(() => ${gqlType}`;
+    let output = `  @Field(() => ${gqlType}${isModel ? 'Model' : ''}`;
 
     if (comment) {
-      output += `, {\n    description: '${comment}',\n  })\n`;
+      output += `, {\n    description: '${comment}',\n`;
+      if (isOptional || isModel) {
+        output += `    nullable: true,\n`;
+      }
+      output += `  })\n`;
     } else {
-      output += ')\n';
+      if (isOptional || isModel) {
+        output += `, {\n    nullable: true,\n  }`;
+      }
+      output += `)\n`;
     }
 
-    output += `  ${fieldName}${isOptional ? '?' : ''}: ${fieldType}${
+    output += `  ${fieldName}: ${fieldType}${isModel ? 'Model' : ''}${
       isArray ? '[]' : ''
-    };\n\n`;
+    }${isOptional ? ' | null' : ''};\n\n`;
+
+    if (isModel) {
+      this.importModels.push(gqlType);
+    }
 
     return output;
   }
@@ -131,5 +152,17 @@ export class ModelGenerator extends FileGenerator {
     }
     const comment = R.last(R.splitAt(commentStartAt, keywords)).join(' ');
     return comment;
+  }
+
+  private writeImportModels(): string {
+    const { importModels } = this;
+
+    let output = '';
+    for (const model of importModels) {
+      const moduleName = inflected.dasherize(inflected.underscore(model));
+      output += `import { ${model}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+    }
+
+    return output;
   }
 }

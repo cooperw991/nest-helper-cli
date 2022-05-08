@@ -33,9 +33,9 @@ export class ResolverGenerator extends FileGenerator {
     output += `import { UserEntity } from '@Decorator/user.decorator';\nimport { PagingQuery } from '@Dto/paging-query.input';\n`;
     output += `import { Managers } from '@Dto/managers.dto';\n`;
     output += `import { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\n`;
-    output += `import { User as UserModel } from '@Module/user/models/user.model';\n`;
+    output += `import { UserModel } from '@Module/user/models/user.model';\n`;
 
-    output += `import { ${modelName} } from '../models/${moduleName}.model';\n`;
+    output += `import { ${modelName}Model } from '../models/${moduleName}.model';\n`;
     output += `import { New${modelName}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}FindFilter } from '../dto/find-filter.input';\nimport { ${uppperCamelPluralizeName}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.dto';\nimport { ${modelName}Service } from '../services/${moduleName}.service';\n\n`;
 
     return output;
@@ -44,7 +44,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeClass(): string {
     const { modelName } = this;
 
-    let output = `@Resolver(() => ${modelName})\nexport class ${modelName}Resolver {\n`;
+    let output = `@Resolver(() => ${modelName}Model)\nexport class ${modelName}Resolver {\n`;
     output += this.writeConstructor();
     output += this.writeFindMethod();
     output += this.writeFilterMethod();
@@ -66,8 +66,8 @@ export class ResolverGenerator extends FileGenerator {
   private writeFindMethod(): string {
     const { modelName, variableName, idType, gqlType } = this;
 
-    let output = `  @Query(() => ${modelName})\n`;
-    output += `  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
+    let output = `  @Query(() => ${modelName}Model)\n`;
+    output += `  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
 
     return output;
   }
@@ -84,8 +84,8 @@ export class ResolverGenerator extends FileGenerator {
   private writeCreateMethod(): string {
     const { modelName, variableName } = this;
 
-    let output = `  @Mutation(() => ${modelName})\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async create${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'input', type: () => New${modelName}Input }) input: New${modelName}Input,\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.create${modelName}(input, me.id);\n  }\n\n`;
+    let output = `  @Mutation(() => ${modelName}Model)\n`;
+    output += `  @UseGuards(GqlAuthGuard)\n  async create${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'input', type: () => New${modelName}Input }) input: New${modelName}Input,\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.create${modelName}(input, me.id);\n  }\n\n`;
 
     return output;
   }
@@ -93,8 +93,8 @@ export class ResolverGenerator extends FileGenerator {
   private writeUpdateMethod(): string {
     const { modelName, variableName, idType, gqlType } = this;
 
-    let output = `  @Mutation(() => ${modelName})\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async update${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n    @Args({ name: 'input', type: () => Edit${modelName}Input }) input: Edit${modelName}Input,\n  ): Promise<${modelName}> {\n    return this.${variableName}Service.update${modelName}(${variableName}Id, input, me.id);\n  }\n\n`;
+    let output = `  @Mutation(() => ${modelName}Model)\n`;
+    output += `  @UseGuards(GqlAuthGuard)\n  async update${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n    @Args({ name: 'input', type: () => Edit${modelName}Input }) input: Edit${modelName}Input,\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.update${modelName}(${variableName}Id, input, me.id);\n  }\n\n`;
 
     return output;
   }
@@ -113,7 +113,7 @@ export class ResolverGenerator extends FileGenerator {
 
     let output = `  @ResolveProperty('managers', () => Managers)\n`;
     output += `  async managers(\n`;
-    output += `    @Root() ${variableName}: ${modelName},\n`;
+    output += `    @Root() ${variableName}: ${modelName}Model,\n`;
     output += `    @Context() ctx: AppGraphqlContext<Managers>,\n`;
     output += `  ): Promise<Managers> {\n`;
     output += `    if (!${variableName}.creatorId && !${variableName}.modifierId) {\n`;

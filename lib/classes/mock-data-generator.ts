@@ -9,9 +9,11 @@ export class MocksGenerator extends FileGenerator {
     modelName: string,
     modelLines: string[][],
     enumObjects: EnumObject[],
+    models: string[],
   ) {
     super(modelName, modelLines);
     this.suffix = 'fake';
+    this.models = models;
     this.enumObjects = enumObjects;
 
     let output = this.writeDependences();
@@ -27,7 +29,7 @@ export class MocksGenerator extends FileGenerator {
   }
 
   private rdmArr(str: string): string {
-    return 'faker.random.arrayElement(' + str + ')';
+    return 'faker.helpers.arrayElement(' + str + ')';
   }
 
   private rdmNum(str = ''): string {
@@ -68,7 +70,7 @@ export class MocksGenerator extends FileGenerator {
     }, '');
 
     values = R.dropLast(2, values);
-    return 'faker.random.arrayElement([' + values + '])';
+    return 'faker.helpers.arrayElement([' + values + '])';
   }
 
   private writeDependences(): string {
@@ -79,8 +81,8 @@ export class MocksGenerator extends FileGenerator {
 
   private writeInputData(): string {
     const { modelName, data } = this;
-    let output1 = `export const new${modelName}Input = {\n`;
-    let output2 = `export const edit${modelName}Input = {\n`;
+    let output1 = `export const new${modelName}Input: New${modelName}Input = {\n`;
+    let output2 = `export const edit${modelName}Input: Edit${modelName}Input = {\n`;
 
     for (const line of data) {
       const field = line[0];
@@ -105,10 +107,12 @@ export class MocksGenerator extends FileGenerator {
       if (type.indexOf('?') !== -1) {
         type = R.dropLast(1, type);
       }
-      const mockVal = this.generateFakeValue(type, line);
+      const mockVal = this.generateFakeValue(type);
 
-      output1 += `  ${field}: ${mockVal},\n`;
-      output2 += `  ${field}: ${mockVal},\n`;
+      if (mockVal) {
+        output1 += `  ${field}: ${mockVal},\n`;
+        output2 += `  ${field}: ${mockVal},\n`;
+      }
     }
 
     output1 += `};\n\n`;
@@ -136,7 +140,7 @@ export class MocksGenerator extends FileGenerator {
   }
 
   private writeInterfaces(): string {
-    const { modelName, enumObjects } = this;
+    const { modelName, moduleName, enumObjects } = this;
 
     let output = `import { ${modelName},`;
     for (const enu of enumObjects) {
@@ -144,6 +148,7 @@ export class MocksGenerator extends FileGenerator {
     }
     output = R.dropLast(1, output);
     output += ` } from '@prisma/client';\n\n`;
+    output += `import { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { New${modelName}Input } from '../dto/new-${moduleName}.input';\n`;
 
     output += `export const creatorId = faker.datatype.number();\n`;
     output += `export const modifierId = faker.datatype.number();\n\n`;
@@ -151,7 +156,7 @@ export class MocksGenerator extends FileGenerator {
     return output;
   }
 
-  private generateFakeValue(type: string, keywords: string[]): string {
+  private generateFakeValue(type: string): string {
     switch (type) {
       case 'String':
         return this.rdmStr();
@@ -174,7 +179,7 @@ export class MocksGenerator extends FileGenerator {
       case 'Unsupported':
         return '';
       default:
-        if (type.indexOf('@relation') === -1) {
+        if (!R.includes(type, this.models)) {
           return this.rdmEnum(type);
         }
         return '';

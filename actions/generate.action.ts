@@ -52,7 +52,11 @@ export class GenerateAction extends AbstractAction {
       enums,
       models,
     );
-    const serviceGenerator = new ServiceGenerator(modelName, modelLines);
+    const serviceGenerator = new ServiceGenerator(
+      modelName,
+      modelLines,
+      models,
+    );
     const resolverGenerator = new ResolverGenerator(
       modelName,
       modelLines,
@@ -83,7 +87,12 @@ export class GenerateAction extends AbstractAction {
     );
     const pagingDTOGenerator = new PagingDTOGenerator(modelName, modelLines);
     const moduleGenerator = new ModuleGenerator(modelName, modelLines);
-    const mocksGenerator = new MocksGenerator(modelName, modelLines, enums);
+    const mocksGenerator = new MocksGenerator(
+      modelName,
+      modelLines,
+      enums,
+      models,
+    );
     const serviceSpecGenerator = new ServiceSpecGenerator(
       modelName,
       modelLines,

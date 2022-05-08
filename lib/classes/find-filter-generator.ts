@@ -93,7 +93,7 @@ export class FindFilterGenerator extends FileGenerator {
 
     let output = `  @Field(() => ${gqlType}, {\n    nullable: true,\n  })\n`;
 
-    output += `  ${fieldName}?: ${fieldType};\n\n`;
+    output += `  ${fieldName}: ${fieldType} | null;\n\n`;
 
     return output;
   }

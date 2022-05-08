@@ -109,7 +109,7 @@ export class EditInputGenerator extends FileGenerator {
 
     output += `, {\n    nullable: true,\n  })\n`;
 
-    output += `  ${fieldName}?: ${fieldType}${isArray ? '[]' : ''};\n\n`;
+    output += `  ${fieldName}: ${fieldType}${isArray ? '[]' : ''} | null;\n\n`;
 
     return output;
   }

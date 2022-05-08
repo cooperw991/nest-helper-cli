@@ -17,7 +17,7 @@ export class PagingDTOGenerator extends FileGenerator {
 
     let output = `import { Field, ObjectType } from '@nestjs/graphql';\n`;
     output += `import { PagingInfo } from '@Dto/paging-info.dto';\n`;
-    output += `import { ${modelName} } from '@Module/${moduleName}/models/${moduleName}.model';\n\n`;
+    output += `import { ${modelName}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n\n`;
 
     return output;
   }
@@ -27,7 +27,7 @@ export class PagingDTOGenerator extends FileGenerator {
 
     let output = `@ObjectType()\nexport class ${uppperCamelPluralizeName}WithPaging {\n`;
 
-    output += `  @Field(() => [${this.modelName}])\n  ${camelPluralizeName}: ${modelName}[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n`;
+    output += `  @Field(() => [${this.modelName}Model])\n  ${camelPluralizeName}: ${modelName}Model[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n`;
 
     output += '}\n';
 
