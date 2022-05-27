@@ -67,7 +67,7 @@ export class ResolverGenerator extends FileGenerator {
     const { modelName, variableName, idType, gqlType } = this;
 
     let output = `  @Query(() => ${modelName}Model)\n`;
-    output += `  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
+    output += `  @UseGuards(GqlAuthGuard)\n  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
 
     return output;
   }

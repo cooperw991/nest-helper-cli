@@ -107,8 +107,8 @@ export class GenerateAction extends AbstractAction {
     await findOrderGenerator.generateFile();
     await pagingDTOGenerator.generateFile();
     await moduleGenerator.generateFile();
-    await mocksGenerator.generateFile();
-    await serviceSpecGenerator.generateFile();
+    // await mocksGenerator.generateFile();
+    // await serviceSpecGenerator.generateFile();
 
     await this.updateAppModuleFile(modelName);
   };

@@ -60,7 +60,7 @@ export class AppModuleFileParser {
 
     let importLine = `import { ${_modelName}Module } from '@Module/${moduleName}/${moduleName}.module';`;
 
-    this._contentLines = R.insert(idx, importLine, this._contentLines);
+    this._contentLines = R.insert(idx - 1, importLine, this._contentLines);
 
     for (let i = idx; i < _contentLines.length; i++) {
       if (_contentLines[i].indexOf('Module,') !== -1) {
