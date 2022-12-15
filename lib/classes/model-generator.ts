@@ -3,29 +3,24 @@ import * as inflected from 'inflected';
 
 import { FileGenerator } from './file-generator';
 import { EnumObject } from '../interfaces/model-enum.interface';
+import { ModelRelations } from '../interfaces/relation.interface';
+import {
+  DataType,
+  ModelProperty,
+} from '../interfaces/model-property.interface';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class ModelGenerator extends FileGenerator {
-  constructor(
-    modelName: string,
-    modelLines: string[][],
-    enumObjects: EnumObject[],
-    models: string[],
-  ) {
-    super(modelName, modelLines);
+  constructor(params: GeneratorParams) {
+    super(params);
+
     this.suffix = 'model';
-    this.models = models;
-    this.importModels = [];
-    this.enumObjects = enumObjects;
+    this.models = params.models;
+    this.output += this.writeGqlDependencies();
+    this.output += this.writeEnumDependencies();
+    this.output += this.writeModelRelations();
     this.output += this.writeModelClass();
-
-    if (this.enumObjects.length) {
-      this.output = this.writeEnumDependencies() + this.output;
-    }
-    this.output = this.writeImportModels() + this.output;
-    this.output = this.writeGqlDependencies() + this.output;
   }
-
-  private importModels: string[];
 
   public async generateFile() {
     await this.writeFile('models/' + this.moduleName);
@@ -33,37 +28,48 @@ export class ModelGenerator extends FileGenerator {
 
   private writeGqlDependencies(): string {
     const { gqlTypes } = this;
-    let output = `import { Field, ObjectType`;
-    for (const gqlType of gqlTypes) {
-      output += `, ${gqlType}`;
-    }
-    output += ` } from '@nestjs/graphql';\n\n`;
-    output += `import { BaseModel } from '@Model/base.model';\n\n`;
-
-    return output;
+    const gqlTypeStr = gqlTypes.join(', ');
+    return `import { Field, ObjectType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
   }
 
   private writeEnumDependencies(): string {
-    const { enumObjects } = this;
-    let output = `import {`;
-
-    for (const enu of enumObjects) {
-      output += ` ${enu.name},`;
+    const { enumRelations } = this;
+    if (!enumRelations.length) {
+      return '';
     }
 
-    output = R.dropLast(1, output) + ` } from '@prisma/client';\n\n`;
+    const enumStr = enumRelations.join(', ');
+    return `import { ${enumStr} } from '@prisma/client';\n\n`;
+  }
+
+  private writeModelRelations(): string {
+    const { modelRelations, modelName } = this;
+    let output = `import { BaseModel } from '@Model/base.model';\n`;
+    const { o, m } = modelRelations[modelName];
+
+    for (const item of o) {
+      const moduleName = inflected.dasherize(inflected.underscore(item));
+      output += `import { ${item} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+    }
+
+    for (const item of m) {
+      const moduleName = inflected.dasherize(inflected.underscore(item));
+      output += `import { ${item} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+    }
+
+    output += '\n';
 
     return output;
   }
 
   private writeModelClass(): string {
-    const { data, modelName } = this;
+    const { modelName, properties } = this;
 
-    let output = '@ObjectType()\n';
+    let output = `@ObjectType({\n  description: '',\n})\n`;
     output += `export class ${modelName}Model extends BaseModel {\n`;
 
-    for (const line of data) {
-      output += this.writeField(line);
+    for (const property of properties) {
+      output += this.writeField(property);
     }
 
     output = R.dropLast(1, output);
@@ -71,29 +77,11 @@ export class ModelGenerator extends FileGenerator {
     return output;
   }
 
-  private writeField(keywords: string[]): string {
-    const fieldName = keywords[0];
-    let type = keywords[1];
-    let isOptional = false;
-    let isArray = false;
-    let isModel = false;
-
-    if (fieldName.indexOf('@') !== -1) {
-      return '';
-    }
-
-    if (type.indexOf('?') !== -1) {
-      type = R.dropLast(1, type);
-      isOptional = true;
-    }
-
-    if (type.indexOf('[]') !== -1) {
-      type = R.dropLast(2, type);
-      isArray = true;
-    }
+  private writeField(property: ModelProperty): string {
+    const { key, type, gqlType, tsType, nullable, isArray } = property;
 
     if (
-      R.includes(fieldName, [
+      R.includes(key, [
         'id',
         'createdAt',
         'updatedAt',
@@ -105,63 +93,31 @@ export class ModelGenerator extends FileGenerator {
       return '';
     }
 
-    if (R.includes(type, this.models)) {
-      isModel = true;
+    const gqlTypeStr = isArray ? `[${gqlType}]` : gqlType;
+    let nullableStr = '';
+    let keyNameStr = key;
+    let tsTypeStr = tsType;
+
+    if (nullable || type === DataType.Relation) {
+      nullableStr = `    nullable: true,\n`;
+      keyNameStr = `${key}?`;
     }
 
-    const comment = this.writeFieldComment(keywords);
-    const [gqlType, fieldType] = this.parseFieldType(type);
-
-    let output = `  @Field(() => ${gqlType}${isModel ? 'Model' : ''}`;
-
-    if (comment) {
-      output += `, {\n    description: '${comment}',\n`;
-      if (isOptional || isModel) {
-        output += `    nullable: true,\n`;
+    if (isArray) {
+      if (nullable || type === DataType.Relation) {
+        tsTypeStr = `${tsType}[] | null`;
+      } else {
+        tsTypeStr = `${tsType}[]`;
       }
-      output += `  })\n`;
     } else {
-      if (isOptional || isModel) {
-        output += `, {\n    nullable: true,\n  }`;
-      }
-      output += `)\n`;
-    }
-
-    output += `  ${fieldName}: ${fieldType}${isModel ? 'Model' : ''}${
-      isArray ? '[]' : ''
-    }${isOptional ? ' | null' : ''};\n\n`;
-
-    if (isModel) {
-      this.importModels.push(gqlType);
-    }
-
-    return output;
-  }
-
-  private writeFieldComment(keywords: string[]): string {
-    let commentStartAt = -1;
-    for (let i = 2; i < keywords.length; i++) {
-      if (keywords[i] === '///') {
-        commentStartAt = i + 1;
-        break;
+      if (nullable || type === DataType.Relation) {
+        tsTypeStr = `${tsType} | null`;
+      } else {
+        tsTypeStr = `${tsType}`;
       }
     }
 
-    if (commentStartAt === -1) {
-      return '';
-    }
-    const comment = R.last(R.splitAt(commentStartAt, keywords)).join(' ');
-    return comment;
-  }
-
-  private writeImportModels(): string {
-    const { importModels } = this;
-
-    let output = '';
-    for (const model of importModels) {
-      const moduleName = inflected.dasherize(inflected.underscore(model));
-      output += `import { ${model}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
-    }
+    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n${nullableStr}  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }
