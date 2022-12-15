@@ -1,99 +1,79 @@
 import * as R from 'ramda';
 
 import { FileGenerator } from './file-generator';
-import { EnumObject } from '../interfaces/model-enum.interface';
+import {
+  DataType,
+  ModelProperty,
+} from '../interfaces/model-property.interface';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class FindFilterGenerator extends FileGenerator {
-  constructor(
-    modelName: string,
-    modelLines: string[][],
-    enumObjects: EnumObject[],
-    models: string[],
-  ) {
-    super(modelName, modelLines);
-    this.suffix = 'input';
-    this.models = models;
-    this.output += this.writeClass();
-    this.enumObjects = enumObjects;
+  constructor(params: GeneratorParams) {
+    super(params);
 
-    if (this.enumObjects.length) {
-      this.output = this.writeEnumDependencies() + this.output;
-    }
-    this.output = this.writeDependencies() + this.output;
+    this.suffix = 'input';
+    this.models = params.models;
+    this.output += this.writeGqlDependencies();
+    this.output += this.writeEnumDependencies();
+    this.output += this.writeFindFilterClass();
   }
 
   public async generateFile() {
     await this.writeFile('dto/find-filter');
   }
 
-  private writeDependencies(): string {
+  private writeGqlDependencies(): string {
     const { gqlTypes } = this;
-    let output = `import { Field, InputType`;
-    for (const gqlType of gqlTypes) {
-      output += `, ${gqlType}`;
+    const gqlTypeStr = [...new Set(gqlTypes)].join(', ');
+    if (gqlTypeStr.length) {
+      return `import { Field, InputType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
+    } else {
+      return `import { Field, InputType } from '@nestjs/graphql';\n\n`;
     }
-    output += ` } from '@nestjs/graphql';\n\n`;
-
-    return output;
   }
 
   private writeEnumDependencies(): string {
-    const { enumObjects } = this;
-    let output = `import {`;
-
-    for (const enu of enumObjects) {
-      output += ` ${enu.name},`;
+    const { enumRelations } = this;
+    if (!enumRelations.length) {
+      return '';
     }
 
-    output = R.dropLast(1, output) + ` } from '@prisma/client';\n\n`;
-
-    return output;
+    const enumStr = enumRelations.join(', ');
+    return `import { ${enumStr} } from '@prisma/client';\n\n`;
   }
 
-  private writeClass(): string {
-    const { uppperCamelPluralizeName, data } = this;
+  private writeFindFilterClass(): string {
+    const { properties } = this;
 
-    let output = `@InputType()\nexport class ${uppperCamelPluralizeName}FindFilter {\n`;
+    let output = `@InputType({\n  description: '',\n})\n`;
+    output += `export class ${this.className}FindFilter {\n`;
 
-    for (const line of data) {
-      output += this.writeField(line);
+    for (const property of properties) {
+      output += this.writeField(property);
     }
 
     output = R.dropLast(1, output);
     output += '}\n';
-
     return output;
   }
 
-  private writeField(keywords: string[]): string {
-    const fieldName = keywords[0];
-    let type = keywords[1];
+  private writeField(property: ModelProperty): string {
+    const { key, type, gqlType, tsType, isArray } = property;
 
-    if (fieldName.indexOf('@') !== -1) {
+    if (
+      R.includes(key, ['deletedAt']) ||
+      type === DataType.Relation ||
+      isArray
+    ) {
       return '';
     }
 
-    if (R.includes(fieldName, ['id', 'createdAt', 'updatedAt', 'deletedAt'])) {
-      return '';
-    }
+    const gqlTypeStr = gqlType;
+    const tsTypeStr = `${tsType} | null`;
 
-    if (type.indexOf('?') !== -1) {
-      type = R.dropLast(1, type);
-    }
+    const keyNameStr = key;
 
-    if (type.indexOf('[]') !== -1) {
-      return '';
-    }
-
-    if (R.includes(type, this.models)) {
-      return '';
-    }
-
-    const [gqlType, fieldType] = this.parseFieldType(type);
-
-    let output = `  @Field(() => ${gqlType}, {\n    nullable: true,\n  })\n`;
-
-    output += `  ${fieldName}: ${fieldType} | null;\n\n`;
+    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

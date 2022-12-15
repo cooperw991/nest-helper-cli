@@ -2,92 +2,65 @@ import * as R from 'ramda';
 import * as inflected from 'inflected';
 
 import { FileGenerator } from './file-generator';
+import {
+  DataType,
+  ModelProperty,
+} from '../interfaces/model-property.interface';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class FindOrderGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][], models: string[]) {
-    super(modelName, modelLines);
-    this.suffix = 'input';
-    this.models = models;
+  constructor(params: GeneratorParams) {
+    super(params);
 
-    this.output =
-      this.writeDependencies() +
-      this.writeEnum() +
-      this.writeRegister() +
-      this.writeClass();
+    this.suffix = 'input';
+    this.models = params.models;
+    this.output += this.writeGqlDependencies();
+    this.output += this.writeEnumDependencies();
+    this.output += this.writeFindOrderlass();
   }
 
   public async generateFile() {
     await this.writeFile('dto/find-order');
   }
 
-  private writeDependencies(): string {
-    const output = `import { InputType, Field, registerEnumType } from '@nestjs/graphql';\n\n`;
+  private writeGqlDependencies(): string {
+    return `import { Field, InputType, registerEnumType } from '@nestjs/graphql';\n\n`;
+  }
+
+  private writeEnumDependencies(): string {
+    const { properties } = this;
+    let output = `export enum ${this.className}FindOrderKeys {\n`;
+
+    for (const property of properties) {
+      output += this.writeField(property);
+    }
+
+    output += `}\n\n`;
+    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: ${this.className}FindOrderKeys,\n  description: '',\n});\n\n`;
 
     return output;
   }
 
-  private writeEnum(): string {
-    const { data, uppperCamelPluralizeName } = this;
-
-    let output = `export enum ${uppperCamelPluralizeName}FindOrderKeys {\n`;
-
-    for (const line of data) {
-      output += this.writeField(line);
-    }
-
-    output += '}\n\n';
+  private writeFindOrderlass(): string {
+    let output = `@InputType({\n  description: '',\n})\n`;
+    output += `export class ${this.className}FindOrder {\n  @Field(() => ${this.className}FindOrderKeys)\n  by: ${this.className}FindOrderKeys;\n\n  @Field(() => Boolean)\n  asc: boolean;\n}\n`;
 
     return output;
   }
 
-  private writeRegister(): string {
-    const { uppperCamelPluralizeName } = this;
+  private writeField(property: ModelProperty): string {
+    const { key, type, isArray } = property;
 
-    const output = `registerEnumType(${uppperCamelPluralizeName}FindOrderKeys, {\n  name: '${uppperCamelPluralizeName}FindOrderKeys',\n  description: '${uppperCamelPluralizeName}FindOrderKeys',\n});\n\n`;
-
-    return output;
-  }
-
-  private writeClass(): string {
-    const { uppperCamelPluralizeName } = this;
-
-    let output = `@InputType()\nexport class ${uppperCamelPluralizeName}FindOrder {\n`;
-
-    output += `  @Field(() => ${uppperCamelPluralizeName}FindOrderKeys)\n  by: ${uppperCamelPluralizeName}FindOrderKeys;\n\n  @Field(() => Boolean)\n  asc: boolean;\n`;
-
-    output += '}\n';
-
-    return output;
-  }
-
-  private writeField(keywords: string[]): string {
-    const fieldName = keywords[0];
-    let type = keywords[1];
-
-    if (fieldName.indexOf('@') !== -1) {
+    if (
+      R.includes(key, ['deletedAt']) ||
+      type === DataType.Relation ||
+      isArray
+    ) {
       return '';
     }
 
-    if (R.includes(fieldName, ['id', 'deletedAt'])) {
-      return '';
-    }
+    const keyConst = inflected.underscore(key).toUpperCase();
 
-    if (type.indexOf('?') !== -1) {
-      type = R.dropLast(1, type);
-    }
-
-    if (type.indexOf('[]') !== -1) {
-      return '';
-    }
-
-    if (R.includes(type, this.models)) {
-      return '';
-    }
-
-    const keyName = inflected.underscore(fieldName).toUpperCase();
-
-    const output = `  ${keyName} = '${fieldName}',\n`;
-
-    return output;
+    return `  ${keyConst} = '${key}',\n`;
   }
 }
