@@ -1,20 +1,25 @@
 import * as R from 'ramda';
 import * as inflected from 'inflected';
 
-import { EnumObject } from '../interfaces/model-enum.interface';
+import { ModelRelations } from '../interfaces/relation.interface';
+import { ModelProperty } from '../interfaces/model-property.interface';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class BaseHandler {
-  constructor(modelName: string, modelLines: string[][]) {
-    this.modelName = modelName;
-    this.data = modelLines;
+  constructor(params: GeneratorParams) {
+    this.modelName = params.modelName;
+    this.properties = params.properties;
+    this.modelRelations = params.modelRelations;
+    this.models = params.models;
+    this.enumRelations = params.enumRelations;
+    this.enums = params.enums;
     this.output = '';
-    this.enums = [];
     this.gqlTypes = [];
 
     this.initNames();
+    this.findGqlTypes();
   }
   protected modelName: string;
-  protected data: string[][];
   protected output: string;
   protected suffix: string;
   protected className: string;
@@ -25,9 +30,11 @@ export class BaseHandler {
   protected dasherizePluralizeName: string;
   protected upperUnderscoreName: string;
   protected enums: string[];
-  protected enumObjects: EnumObject[];
   protected gqlTypes: string[];
   protected models: string[];
+  protected modelRelations: ModelRelations;
+  protected enumRelations: string[];
+  protected properties: ModelProperty[];
 
   private initNames() {
     // 类名称：首字母大写，驼峰
@@ -59,34 +66,15 @@ export class BaseHandler {
       .toUpperCase();
   }
 
-  protected parseFieldType(type: string): [string, string] {
-    switch (type) {
-      case 'String':
-        return ['String', 'string'];
-      case 'Boolean':
-        return ['Boolean', 'boolean'];
-      case 'Int':
-        this.gqlTypes = [...new Set([...this.gqlTypes, 'Int'])];
-        return ['Int', 'number'];
-      case 'BigInt':
-        return ['Float', 'number'];
-      case 'Float':
-        return ['Float', 'number'];
-      case 'Decimal':
-        return ['Float', 'number'];
-      case 'DateTime':
-        return ['Date', 'Date'];
-      case 'Json':
-        return ['String', 'any'];
-      case 'Bytes':
-        return ['String', 'string'];
-      case 'Unsupported':
-        return ['String', 'string'];
-      default:
-        if (!R.includes(type, this.models)) {
-          this.enums.push(type);
-        }
-        return [type, type];
+  private findGqlTypes() {
+    const { properties } = this;
+
+    for (const property of properties) {
+      if (property.gqlType === 'Int' || property.gqlType === 'Float') {
+        this.gqlTypes.push(property.gqlType);
+      }
     }
+
+    this.gqlTypes = [...new Set(this.gqlTypes)];
   }
 }

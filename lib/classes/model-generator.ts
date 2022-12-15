@@ -1,9 +1,6 @@
 import * as R from 'ramda';
-import * as inflected from 'inflected';
 
 import { FileGenerator } from './file-generator';
-import { EnumObject } from '../interfaces/model-enum.interface';
-import { ModelRelations } from '../interfaces/relation.interface';
 import {
   DataType,
   ModelProperty,
@@ -28,8 +25,12 @@ export class ModelGenerator extends FileGenerator {
 
   private writeGqlDependencies(): string {
     const { gqlTypes } = this;
-    const gqlTypeStr = gqlTypes.join(', ');
-    return `import { Field, ObjectType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
+    const gqlTypeStr = [...new Set(gqlTypes)].join(', ');
+    if (gqlTypeStr.length) {
+      return `import { Field, ObjectType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
+    } else {
+      return `import { Field, InputType } from '@nestjs/graphql';\n\n`;
+    }
   }
 
   private writeEnumDependencies(): string {
@@ -48,13 +49,11 @@ export class ModelGenerator extends FileGenerator {
     const { o, m } = modelRelations[modelName];
 
     for (const item of o) {
-      const moduleName = inflected.dasherize(inflected.underscore(item));
-      output += `import { ${item} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item} } from '@Module/${this.moduleName}/models/${this.moduleName}.model';\n`;
     }
 
     for (const item of m) {
-      const moduleName = inflected.dasherize(inflected.underscore(item));
-      output += `import { ${item} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item} } from '@Module/${this.moduleName}/models/${this.moduleName}.model';\n`;
     }
 
     output += '\n';
