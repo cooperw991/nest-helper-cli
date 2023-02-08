@@ -18,8 +18,8 @@ export class EditInputGenerator extends FileGenerator {
     this.output += this.writeEditInputClass();
   }
 
-  public async generateFile() {
-    await this.writeFile('dto/edit-' + this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('dto/edit-' + this.moduleName, ifReplace);
   }
 
   private writeGqlDependencies(): string {

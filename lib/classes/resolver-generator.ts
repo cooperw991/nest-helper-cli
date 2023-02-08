@@ -1,141 +1,120 @@
 import { FileGenerator } from './file-generator';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class ResolverGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][], models: string[]) {
-    super(modelName, modelLines);
+  constructor(params: GeneratorParams) {
+    super(params);
+
     this.suffix = 'resolver';
-    this.enums = [];
-    this.models = models;
-    this.getIdType();
+    this.models = params.models;
+
     this.output += this.writeDependencies();
-    this.output += this.writeClass();
+    this.output += this.writeResolverClass();
+    this.output += this.writeGetMethod();
+    this.output += this.writeListMethod();
+    this.output += this.writeCreateMethod();
+    this.output += this.writeUpdateMethod();
+    this.output += this.writeDeleteMethod();
+    this.output += this.writeManagers();
+
+    this.output += `}\n`;
   }
 
-  protected enums: string[];
-  protected idType: string;
-  protected gqlType: string;
-
-  public async generateFile() {
-    await this.writeFile('resolvers/' + this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('resolvers/' + this.moduleName, ifReplace);
   }
 
   private writeDependencies(): string {
-    const { modelName, moduleName, uppperCamelPluralizeName, gqlTypes } = this;
-
-    let output = `import {\n  Resolver,\n  Query,\n  Mutation,\n  Args,\n`;
-    for (const gqlType of gqlTypes) {
-      output += `  ${gqlType},\n`;
-    }
-    output += `  ResolveProperty,\n  Context,\n  Root,\n`;
-    output += `} from '@nestjs/graphql';\n`;
+    const { moduleName, className, uppperCamelPluralizeName } = this;
+    let output = '';
+    output += `import {\n  Resolver,\n  Query,\n  Mutation,\n  Args,\n  Int,\n  ResolveField,\n  Root,\n  Context,\n} from '@nestjs/graphql';\n`;
     output += `import { UseGuards } from '@nestjs/common';\n\n`;
-    output += `import { GqlAuthGuard } from '@Guard/auth.guard';\n`;
-    output += `import { UserEntity } from '@Decorator/user.decorator';\nimport { PagingQuery } from '@Dto/paging-query.input';\n`;
-    output += `import { Managers } from '@Dto/managers.dto';\n`;
-    output += `import { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\n`;
-    output += `import { UserModel } from '@Module/user/models/user.model';\n`;
+    output += `import { UserDecorator } from '@Decorator/user.decorator';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { RoleGuard } from '@Guard/role.guard';\nimport { RoleLimit, Roles } from '@Decorator/role.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { UserModel } from '@Module/user/models/user.model';\n\n`;
 
-    output += `import { ${modelName}Model } from '../models/${moduleName}.model';\n`;
-    output += `import { New${modelName}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}FindFilter } from '../dto/find-filter.input';\nimport { ${uppperCamelPluralizeName}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.dto';\nimport { ${modelName}Service } from '../services/${moduleName}.service';\n\n`;
+    output += `import { ${className}Model } from '../models/${moduleName}.model';\nimport { New${className}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${className}Input } from '../dto/edit-${moduleName}.input';\nimport { ${className}FindFilter } from '../dto/find-filter.input';\nimport { ${className}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\nimport { ${className}Service } from '../services/${moduleName}.service';\n\n`;
 
     return output;
   }
 
-  private writeClass(): string {
-    const { modelName } = this;
+  private writeResolverClass(): string {
+    const { className, variableName } = this;
 
-    let output = `@Resolver(() => ${modelName}Model)\nexport class ${modelName}Resolver {\n`;
-    output += this.writeConstructor();
-    output += this.writeFindMethod();
-    output += this.writeFilterMethod();
-    output += this.writeCreateMethod();
-    output += this.writeUpdateMethod();
-    output += this.writeDeleteMethod();
-    output += this.writeResolveProperty();
-    output += `}\n`;
+    let output = `@Resolver(() => ${className}Model)\n`;
+    output += `export class ${className}Resolver {\n`;
+    output += `  constructor(private ${variableName}Service: ${className}Service) {}\n\n`;
 
     return output;
   }
 
-  private writeConstructor(): string {
-    const { variableName, modelName } = this;
-    const output = `  constructor(private ${variableName}Service: ${modelName}Service) {}\n\n`;
-    return output;
-  }
+  private writeGetMethod(): string {
+    const { className, variableName } = this;
 
-  private writeFindMethod(): string {
-    const { modelName, variableName, idType, gqlType } = this;
+    let output = `  @Query(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
 
-    let output = `  @Query(() => ${modelName}Model)\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async find${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.find${modelName}(${variableName}Id);\n  }\n\n`;
+    output += `  async get${className}Detail(\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n  ): Promise<${className}Model> {\n`;
+
+    output += `    return this.${variableName}Service.get${className}Detail(${variableName}Id);\n  }\n\n`;
 
     return output;
   }
 
-  private writeFilterMethod(): string {
-    const { variableName, uppperCamelPluralizeName } = this;
+  private writeListMethod(): string {
+    const { className, variableName, uppperCamelPluralizeName } = this;
 
-    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging)\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async find${uppperCamelPluralizeName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'where', type: () => ${uppperCamelPluralizeName}FindFilter, nullable: true })\n    where: ${uppperCamelPluralizeName}FindFilter,\n    @Args({ name: 'order', type: () => [${uppperCamelPluralizeName}FindOrder], nullable: true })\n    order: ${uppperCamelPluralizeName}FindOrder[],\n    @Args({ name: 'paging', type: () => PagingQuery, nullable: true })\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n    return this.${variableName}Service.find${uppperCamelPluralizeName}(where, order, paging);\n  }\n\n`;
+    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+
+    output += `  async get${className}List(\n    @Args({ name: 'where', type: () => ${className}FindFilter, nullable: true }) where: ${className}FindFilter,\n    @Args({ name: 'order', type: () => [${className}FindOrder], nullable: true }) order: ${className}FindOrder[],\n    @Args({ name: 'paging', type: () => PagingQuery, nullable: true }) paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+
+    output += `    return this.${variableName}Service.get${className}List(where, order, paging);\n  }\n\n`;
 
     return output;
   }
 
   private writeCreateMethod(): string {
-    const { modelName, variableName } = this;
+    const { className, variableName } = this;
 
-    let output = `  @Mutation(() => ${modelName}Model)\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async create${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: 'input', type: () => New${modelName}Input }) input: New${modelName}Input,\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.create${modelName}(input, me.id);\n  }\n\n`;
+    let output = `  @Mutation(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+
+    output += `  async createNew${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: 'input', type: () => New${className}Input, nullable: true }) input: New${className}Input,\n  ): Promise<${className}Model> {\n`;
+
+    output += `    return this.${variableName}Service.createNew${className}(me, input);\n  }\n\n`;
 
     return output;
   }
 
   private writeUpdateMethod(): string {
-    const { modelName, variableName, idType, gqlType } = this;
+    const { className, variableName } = this;
 
-    let output = `  @Mutation(() => ${modelName}Model)\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async update${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n    @Args({ name: 'input', type: () => Edit${modelName}Input }) input: Edit${modelName}Input,\n  ): Promise<${modelName}Model> {\n    return this.${variableName}Service.update${modelName}(${variableName}Id, input, me.id);\n  }\n\n`;
+    let output = `  @Mutation(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+
+    output += `  async update${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n    @Args({ name: 'input', type: () => Edit${className}Input }) input: Edit${className}Input,\n  ): Promise<${className}Model> {\n`;
+
+    output += `    return this.${variableName}Service.update${className}(me, ${variableName}Id, input);\n  }\n\n`;
 
     return output;
   }
 
   private writeDeleteMethod(): string {
-    const { modelName, variableName, idType, gqlType } = this;
+    const { className, variableName } = this;
 
-    let output = `  @Mutation(() => Boolean)\n`;
-    output += `  @UseGuards(GqlAuthGuard)\n  async delete${modelName}(\n    @UserEntity() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => ${gqlType} }) ${variableName}Id: ${idType},\n  ): Promise<boolean> {\n    return this.${variableName}Service.delete${modelName}(${variableName}Id, me.id);\n  }\n\n`;
+    let output = `  @Mutation(() => Boolean, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
 
-    return output;
-  }
+    output += `  async delete${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n  ): Promise<boolean> {\n`;
 
-  private writeResolveProperty(): string {
-    const { variableName, modelName } = this;
-
-    let output = `  @ResolveProperty('managers', () => Managers)\n`;
-    output += `  async managers(\n`;
-    output += `    @Root() ${variableName}: ${modelName}Model,\n`;
-    output += `    @Context() ctx: AppGraphqlContext<Managers>,\n`;
-    output += `  ): Promise<Managers> {\n`;
-    output += `    if (!${variableName}.creatorId && !${variableName}.modifierId) {\n`;
-    output += `      return {\n`;
-    output += `        createdBy: null,\n        modifiedBy: null,\n`;
-    output += `      };\n    }\n    return ctx.managersLoader.load([${variableName}.creatorId, ${variableName}.modifierId]);\n  }\n`;
+    output += `    return this.${variableName}Service.delete${className}(me, ${variableName}Id);\n  }\n\n`;
 
     return output;
   }
 
-  private getIdType() {
-    const { data } = this;
+  private writeManagers(): string {
+    const { className, variableName } = this;
 
-    for (const line of data) {
-      if (line[1] === 'String') {
-        this.idType = 'string';
-        this.gqlType = 'String';
-      } else {
-        this.idType = 'number';
-        this.gqlType = 'Int';
-      }
-      this.parseFieldType(line[1]);
-    }
+    let output = `  @ResolveField('managers', () => Managers)\n`;
+
+    output += `  async managers(\n    @Root() ${variableName}: ${className}Model,\n    @Context() ctx: AppGraphqlContext<Managers>,\n  ): Promise<Managers> {\n`;
+
+    output += `    if (!${variableName}.creatorId && !${variableName}.modifierId) {\n      return {\n        createdBy: null,\n        modifiedBy: null,\n      };\n    }\n    return ctx.managersLoader.load({\n      creatorId: ${variableName}.creatorId,\n      modifierId: ${variableName}.modifierId,\n    });\n  }\n`;
+
+    return output;
   }
 }

@@ -11,6 +11,7 @@
     "sourceMap": true,
     "incremental": true,
     "skipLibCheck": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "outDir": "./dist/"
   }
 }

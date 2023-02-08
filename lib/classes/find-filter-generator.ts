@@ -18,8 +18,8 @@ export class FindFilterGenerator extends FileGenerator {
     this.output += this.writeFindFilterClass();
   }
 
-  public async generateFile() {
-    await this.writeFile('dto/find-filter');
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('dto/find-filter', ifReplace);
   }
 
   private writeGqlDependencies(): string {

@@ -9,8 +9,8 @@ export class CommonDTOsGenerator extends BaseHandler {
   }
 
   public async generateFiles() {
-    await this.writeFile('creator-and-modifier.dto.ts', 'dto');
-    await this.writeFile('paging-info.dto.ts', 'dto');
+    await this.writeFile('creator-and-modifier.object.ts', 'dto');
+    await this.writeFile('paging-info.object.ts', 'dto');
   }
 
   private generateDTOCreatorAndModifier() {
@@ -20,7 +20,7 @@ export class CommonDTOsGenerator extends BaseHandler {
 
     output += `@ObjectType()\nexport class CreatorAndModifier {\n  @Field(() => User)\n  creator: User;\n\n  @Field(() => User)\n  lastModifier: User;\n}\n`;
 
-    this.outputs['creator-and-modifier.dto.ts'] = output;
+    this.outputs['creator-and-modifier.object.ts'] = output;
   }
 
   private generateDTOPagingInfo() {
@@ -28,6 +28,6 @@ export class CommonDTOsGenerator extends BaseHandler {
 
     output += `@ObjectType()\nexport class PagingInfo {\n  @Field(() => Int)\n  totalCount: number;\n\n  @Field(() => Int)\n  currentOffset: number;\n\n  @Field(() => Int)\n  currentLimit: number;\n}\n`;
 
-    this.outputs['paging-info.dto.ts'] = output;
+    this.outputs['paging-info.object.ts'] = output;
   }
 }

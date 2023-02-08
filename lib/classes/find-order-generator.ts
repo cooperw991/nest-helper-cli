@@ -19,8 +19,8 @@ export class FindOrderGenerator extends FileGenerator {
     this.output += this.writeFindOrderlass();
   }
 
-  public async generateFile() {
-    await this.writeFile('dto/find-order');
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('dto/find-order', ifReplace);
   }
 
   private writeGqlDependencies(): string {
@@ -36,7 +36,7 @@ export class FindOrderGenerator extends FileGenerator {
     }
 
     output += `}\n\n`;
-    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: ${this.className}FindOrderKeys,\n  description: '',\n});\n\n`;
+    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: '${this.className}FindOrderKeys',\n  description: '',\n});\n\n`;
 
     return output;
   }

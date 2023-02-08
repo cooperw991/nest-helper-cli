@@ -18,8 +18,8 @@ export class NewInputGenerator extends FileGenerator {
     this.output = this.writeGqlDependencies() + this.output;
   }
 
-  public async generateFile() {
-    await this.writeFile('dto/new-' + this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('dto/new-' + this.moduleName, ifReplace);
   }
 
   private writeGqlDependencies(): string {

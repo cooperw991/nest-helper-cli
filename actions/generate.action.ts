@@ -10,11 +10,8 @@ import { NewInputGenerator } from '../lib/classes/new-input-generator';
 import { EditInputGenerator } from '../lib/classes/edit-input-generator';
 import { FindFilterGenerator } from '../lib/classes/find-filter-generator';
 import { FindOrderGenerator } from '../lib/classes/find-order-generator';
-import { PagingDTOGenerator } from '../lib/classes/paging-dto-generator';
+import { PagingObjectGenerator } from '../lib/classes/paging-dto-generator';
 import { ModuleGenerator } from '../lib/classes/module-generator';
-import { MocksGenerator } from '../lib/classes/mock-data-generator';
-import { ServiceSpecGenerator } from '../lib/classes/service-spec-generator';
-import { AppModuleFileParser } from '../lib/classes/app-module-file-parser';
 
 export class GenerateAction extends AbstractAction {
   public async handle(inputs: Input[], options: Input[]) {
@@ -22,12 +19,6 @@ export class GenerateAction extends AbstractAction {
       return input.name === 'schematic';
     });
 
-    if (schematic.value === 'module' || schematic.value === 'mo') {
-      await this.generateModuleFiles(inputs.concat(options));
-    }
-  }
-
-  generateModuleFiles = async (inputs: Input[]) => {
     const modelName = inputs.find((input) => input.name === 'name')
       ?.value as string;
 
@@ -36,88 +27,146 @@ export class GenerateAction extends AbstractAction {
       throw new Error();
     }
 
+    const parser = await this.generateParser(modelName);
+
+    const ifReplace = !!options.find((opt) => opt.name === 'replace');
+
+    if (schematic.value === 'module' || schematic.value === 'mo') {
+      await this.generateModuleFiles(parser, modelName, ifReplace);
+    } else if (schematic.value === 'model' || schematic.value === 'mod') {
+      await this.generateModelFiles(parser, modelName, ifReplace);
+    }
+  }
+
+  generateParser = async (modelName: string): Promise<SchemaFileParser> => {
+    if (!modelName) {
+      logger.error('param incrrect!');
+      throw new Error();
+    }
+
     const parser = new SchemaFileParser();
 
-    await parser.init(modelName);
+    await parser.init();
 
-    await Promise.all([parser.parseEnums(), parser.parseModelNames()]);
+    await parser.getModelProperties(modelName);
 
-    const modelLines = parser.targetModel;
-    const enums = parser.enums;
-    const models = parser.models;
-
-    const modelGenerator = new ModelGenerator(
-      modelName,
-      modelLines,
-      enums,
-      models,
-    );
-    const serviceGenerator = new ServiceGenerator(
-      modelName,
-      modelLines,
-      models,
-    );
-    const resolverGenerator = new ResolverGenerator(
-      modelName,
-      modelLines,
-      models,
-    );
-    const newInputGenerator = new NewInputGenerator(
-      modelName,
-      modelLines,
-      enums,
-      models,
-    );
-    const editInputGenerator = new EditInputGenerator(
-      modelName,
-      modelLines,
-      enums,
-      models,
-    );
-    const findFilterGenerator = new FindFilterGenerator(
-      modelName,
-      modelLines,
-      enums,
-      models,
-    );
-    const findOrderGenerator = new FindOrderGenerator(
-      modelName,
-      modelLines,
-      models,
-    );
-    const pagingDTOGenerator = new PagingDTOGenerator(modelName, modelLines);
-    const moduleGenerator = new ModuleGenerator(modelName, modelLines);
-    const mocksGenerator = new MocksGenerator(
-      modelName,
-      modelLines,
-      enums,
-      models,
-    );
-    const serviceSpecGenerator = new ServiceSpecGenerator(
-      modelName,
-      modelLines,
-    );
-
-    await modelGenerator.generateFile();
-    await serviceGenerator.generateFile();
-    await resolverGenerator.generateFile();
-    await newInputGenerator.generateFile();
-    await editInputGenerator.generateFile();
-    await findFilterGenerator.generateFile();
-    await findOrderGenerator.generateFile();
-    await pagingDTOGenerator.generateFile();
-    await moduleGenerator.generateFile();
-    // await mocksGenerator.generateFile();
-    // await serviceSpecGenerator.generateFile();
-
-    await this.updateAppModuleFile(modelName);
+    return parser;
   };
 
-  updateAppModuleFile = async (modelName: string) => {
-    const appModuleParser = new AppModuleFileParser();
+  generateModelFiles = async (
+    parser: SchemaFileParser,
+    modelName: string,
+    ifReplace: boolean,
+  ) => {
+    const { models, enums, modelRelations, properties, enumRelations } = parser;
 
-    await appModuleParser.init(modelName);
-    await appModuleParser.updateAppModuleFile();
-    await appModuleParser.writeFile();
+    const params = {
+      modelName,
+      models,
+      enums,
+      modelRelations,
+      properties,
+      enumRelations,
+    };
+
+    const modelGen = new ModelGenerator(params);
+
+    return modelGen.generateFile(ifReplace);
+  };
+
+  generateServiceFiles = async (
+    parser: SchemaFileParser,
+    modelName: string,
+    ifReplace: boolean,
+  ) => {
+    const { models, enums, modelRelations, properties, enumRelations } = parser;
+
+    const params = {
+      modelName,
+      models,
+      enums,
+      modelRelations,
+      properties,
+      enumRelations,
+    };
+
+    const modelGen = new ServiceGenerator(params);
+
+    return modelGen.generateFile(ifReplace);
+  };
+
+  generateResolverFiles = async (
+    parser: SchemaFileParser,
+    modelName: string,
+    ifReplace: boolean,
+  ) => {
+    const { models, enums, modelRelations, properties, enumRelations } = parser;
+
+    const params = {
+      modelName,
+      models,
+      enums,
+      modelRelations,
+      properties,
+      enumRelations,
+    };
+
+    const modelGen = new ResolverGenerator(params);
+
+    return modelGen.generateFile(ifReplace);
+  };
+
+  generateDTOFiles = async (
+    parser: SchemaFileParser,
+    modelName: string,
+    ifReplace: boolean,
+  ) => {
+    const { models, enums, modelRelations, properties, enumRelations } = parser;
+
+    const params = {
+      modelName,
+      models,
+      enums,
+      modelRelations,
+      properties,
+      enumRelations,
+    };
+
+    const editInputGen = new EditInputGenerator(params);
+    const newInputGen = new NewInputGenerator(params);
+    const newFindFilterGen = new FindFilterGenerator(params);
+    const newFindOrderGen = new FindOrderGenerator(params);
+    const pagingGen = new PagingObjectGenerator(params);
+
+    await editInputGen.generateFile(ifReplace);
+    await newInputGen.generateFile(ifReplace);
+    await newFindFilterGen.generateFile(ifReplace);
+    await newFindOrderGen.generateFile(ifReplace);
+    await pagingGen.generateFile(ifReplace);
+  };
+
+  generateModuleFiles = async (
+    parser: SchemaFileParser,
+    modelName: string,
+    ifReplace: boolean,
+  ) => {
+    const { models, enums, modelRelations, properties, enumRelations } = parser;
+
+    const params = {
+      modelName,
+      models,
+      enums,
+      modelRelations,
+      properties,
+      enumRelations,
+    };
+
+    const moduleGen = new ModuleGenerator(params);
+
+    await this.generateModelFiles(parser, modelName, ifReplace);
+    await this.generateDTOFiles(parser, modelName, ifReplace);
+    await this.generateServiceFiles(parser, modelName, ifReplace);
+    await this.generateResolverFiles(parser, modelName, ifReplace);
+    await moduleGen.generateFile(ifReplace);
   };
 }

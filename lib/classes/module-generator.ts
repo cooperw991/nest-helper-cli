@@ -1,36 +1,32 @@
 import { FileGenerator } from './file-generator';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class ModuleGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][]) {
-    super(modelName, modelLines);
+  constructor(params: GeneratorParams) {
+    super(params);
+
     this.suffix = 'module';
+    this.models = params.models;
+
     this.output += this.writeDependencies();
-    this.output += this.writeClass();
+    this.output += this.writeModuleClass();
   }
 
-  protected idType: string;
-
-  public async generateFile() {
-    await this.writeFile(this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile(this.moduleName, ifReplace);
   }
 
   private writeDependencies(): string {
-    const { modelName, moduleName } = this;
-    let output = `import { Module } from '@nestjs/common';\n`;
-
-    output += `import { ${modelName}Service } from '@Module/${moduleName}/services/${moduleName}.service';\n`;
-    output += `import { ${modelName}Resolver } from '@Module/${moduleName}/resolvers/${moduleName}.resolver';\n\n`;
+    const { moduleName, className } = this;
+    const output = `import { Module } from '@nestjs/common';\nimport { ${className}Service } from './services/${moduleName}.service';\nimport { ${className}Resolver } from './resolvers/${moduleName}.resolver';\n\n`;
 
     return output;
   }
 
-  private writeClass(): string {
-    const { modelName } = this;
+  private writeModuleClass(): string {
+    const { className } = this;
 
-    let output = `@Module({\n`;
-    output += `  providers: [${modelName}Service, ${modelName}Resolver],\n`;
-    output += `  exports: [${modelName}Service],\n`;
-    output += `})\nexport class ${modelName}Module {}\n`;
+    const output = `@Module({\n  providers: [${className}Service, ${className}Resolver],\n  exports: [${className}Service],\n})\nexport class ${className}Module {}\n`;
 
     return output;
   }

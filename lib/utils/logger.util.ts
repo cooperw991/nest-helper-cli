@@ -1,6 +1,6 @@
 import * as winston from 'winston';
 const { combine, timestamp, printf } = winston.format;
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 
 const myFormat = printf((info) => {
   return `${info.timestamp} ${info.level}: ${info.message}`;

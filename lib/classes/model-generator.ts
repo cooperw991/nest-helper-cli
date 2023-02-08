@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import * as inflected from 'inflected';
 
 import { FileGenerator } from './file-generator';
 import {
@@ -19,8 +20,8 @@ export class ModelGenerator extends FileGenerator {
     this.output += this.writeModelClass();
   }
 
-  public async generateFile() {
-    await this.writeFile('models/' + this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('models/' + this.moduleName, ifReplace);
   }
 
   private writeGqlDependencies(): string {
@@ -45,15 +46,18 @@ export class ModelGenerator extends FileGenerator {
 
   private writeModelRelations(): string {
     const { modelRelations, modelName } = this;
+    console.log(modelRelations.Membership.o);
     let output = `import { BaseModel } from '@Model/base.model';\n`;
     const { o, m } = modelRelations[modelName];
 
     for (const item of o) {
-      output += `import { ${item} } from '@Module/${this.moduleName}/models/${this.moduleName}.model';\n`;
+      const moduleName = inflected.dasherize(inflected.underscore(item.value));
+      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
     }
 
     for (const item of m) {
-      output += `import { ${item} } from '@Module/${this.moduleName}/models/${this.moduleName}.model';\n`;
+      const moduleName = inflected.dasherize(item.value);
+      output += `import { ${item.value} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
     }
 
     output += '\n';
@@ -92,7 +96,11 @@ export class ModelGenerator extends FileGenerator {
       return '';
     }
 
-    const gqlTypeStr = isArray ? `[${gqlType}]` : gqlType;
+    const gqlTypeStr = isArray
+      ? `[${gqlType}]`
+      : type === DataType.Relation
+      ? `${gqlType}Model`
+      : gqlType;
     let nullableStr = '';
     let keyNameStr = key;
     let tsTypeStr = tsType;
@@ -102,17 +110,19 @@ export class ModelGenerator extends FileGenerator {
       keyNameStr = `${key}?`;
     }
 
+    tsTypeStr = type === DataType.Relation ? `${tsType}Model` : `${tsType}`;
+
     if (isArray) {
       if (nullable || type === DataType.Relation) {
-        tsTypeStr = `${tsType}[] | null`;
+        tsTypeStr = `${tsTypeStr}[] | null`;
       } else {
-        tsTypeStr = `${tsType}[]`;
+        tsTypeStr = `${tsTypeStr}[]`;
       }
     } else {
       if (nullable || type === DataType.Relation) {
-        tsTypeStr = `${tsType} | null`;
+        tsTypeStr = `${tsTypeStr} | null`;
       } else {
-        tsTypeStr = `${tsType}`;
+        tsTypeStr = `${tsTypeStr}`;
       }
     }
 

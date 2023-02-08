@@ -12,12 +12,12 @@ export class PagingObjectGenerator extends FileGenerator {
     this.output += this.writePagingClass();
   }
 
-  public async generateFile() {
-    await this.writeFile('dto/paging');
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('dto/paging', ifReplace);
   }
 
   private writeGqlDependencies(): string {
-    return `import { Field, ObjectType } from '@nestjs/graphql';\nimport { PagingInfo } from '@Dto/paging-info.dto';\n\n`;
+    return `import { Field, ObjectType } from '@nestjs/graphql';\nimport { PagingInfo } from '@Dto/paging-info.object';\n\n`;
   }
 
   private writeModelDependencies(): string {

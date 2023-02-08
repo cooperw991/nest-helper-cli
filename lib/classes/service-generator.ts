@@ -1,192 +1,276 @@
 import * as R from 'ramda';
-
 import { FileGenerator } from './file-generator';
+import { DataType } from '../interfaces/model-property.interface';
+import { GeneratorParams } from '../interfaces/generator-param.interface';
 
 export class ServiceGenerator extends FileGenerator {
-  constructor(modelName: string, modelLines: string[][], models: string[]) {
-    super(modelName, modelLines);
+  constructor(params: GeneratorParams, ifLog = true) {
+    super(params);
+
     this.suffix = 'service';
-    this.models = models;
-    this.getIdType();
-    this.getRelations();
-    this.output += this.writeDependencies();
-    this.output += this.writeClass();
+    this.models = params.models;
+    this.needTimeCheck = false;
+    this.ifLog = ifLog;
+    this.exceptions = ['InternalServerErrorException', 'NotFoundException'];
+
+    this.output += this.writeServiceClass();
+    this.output += this.writeGetMethod();
+    this.output += this.writeListMethod();
+    this.output += this.writeCreateMethod();
+    this.output += this.writeUpdateMethod();
+    this.output += this.writeDeleteMethod();
+
+    this.output = this.writeDependencies() + this.output;
+
+    this.output += `}\n`;
   }
 
-  protected idType: string;
-  protected relations: string[];
+  private needTimeCheck: boolean;
+  private exceptions: string[];
+  private ifLog: boolean;
 
-  public async generateFile() {
-    await this.writeFile('services/' + this.moduleName);
+  public async generateFile(ifReplace: boolean) {
+    await this.writeFile('services/' + this.moduleName, ifReplace);
   }
 
   private writeDependencies(): string {
-    const { modelName, moduleName, uppperCamelPluralizeName } = this;
-    let output = `import R from 'ramda';\n`;
-    output += `import {\n  Injectable,\n  InternalServerErrorException,\n  NotFoundException,\n} from '@nestjs/common';\n`;
+    const { moduleName, className, uppperCamelPluralizeName } = this;
+    let output = '';
+    output += `import R from 'ramda';\n`;
+    if (this.needTimeCheck) {
+      output += `import dayjs from 'dayjs';\n`;
+      this.exceptions.push('NotAcceptableException');
+    }
+    output += `import { Injectable, ${[...new Set(this.exceptions)].join(
+      ', ',
+    )}, } from '@nestjs/common';\n`;
     output += `import { PrismaService } from 'nestjs-prisma';\n`;
-    output += `import { I18nRequestScopeService } from 'nestjs-i18n';\n`;
-    output += `import { Prisma } from '@prisma/client';\n`;
+    output += `import { Prisma } from '@prisma/client';\n\n`;
+    output += `import { I18nService } from 'nestjs-i18n';\n`;
     output += `import { Logger } from '@nestjs/common';\n\n`;
 
     output += `import { PagingQuery } from '@Dto/paging-query.input';\n`;
     output += `import { pagingResponse, prismaPaging } from '@Util/pagination.util';\n`;
-    output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n\n`;
 
+    output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n`;
     output += `import { LogService } from '@Module/log/services/log.service';\n`;
-    output += `import { ${modelName}Model } from '../models/${moduleName}.model';\n`;
-    output += `import { New${modelName}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${modelName}Input } from '../dto/edit-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}FindFilter } from '../dto/find-filter.input';\nimport { ${uppperCamelPluralizeName}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.dto';\n\n`;
+    output += `import { UserModel } from '@Module/user/models/user.model';\n`;
+    output += `import { ${className}Model } from '../models/${moduleName}.model';\n`;
+    output += `import { New${className}Input } from '../dto/new-${moduleName}.input';\n`;
+    output += `import { Edit${className}Input } from '../dto/edit-${moduleName}.input';\n`;
+    output += `import { ${className}FindFilter } from '../dto/find-filter.input';\n`;
+    output += `import { ${className}FindOrder } from '../dto/find-order.input';\n`;
+    output += `import { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\n\n`;
 
     return output;
   }
 
-  private writeClass(): string {
-    const { modelName } = this;
+  private writeServiceClass(): string {
+    const { className } = this;
 
-    let output = `@Injectable()\nexport class ${modelName}Service {\n`;
-    output += this.writeConstructor();
-    output += this.writeFindMethod();
-    output += this.writeFilterMethod();
-    output += this.writeCreateMethod();
-    output += this.writeUpdateMethod();
-    output += this.writeDeleteMethod();
-    output += `}\n`;
+    let output = `@Injectable()\n`;
+    output += `export class ${className}Service {\n`;
+    output += `  constructor(\n    private prisma: PrismaService,\n    private logService: LogService,\n    private i18n: I18nService,\n  ) {\n    this.moduleName = '${className}';\n  }\n\n`;
+
+    output += `  private moduleName: string;\n\n`;
 
     return output;
   }
 
-  private writeConstructor(): string {
-    const { moduleName } = this;
-    let output = `  constructor(\n`;
-    output += `    private prisma: PrismaService,\n`;
-    output += `    private readonly i18n: I18nRequestScopeService,\n`;
-    output += `    private readonly logService: LogService,\n`;
-    output += `  ) {\n    this.moduleName = '${moduleName}';\n  }\n\n`;
+  private writeGetMethod(): string {
+    const { className, variableName, modelRelations, modelName } = this;
 
-    output += `  public moduleName: string;\n\n`;
-    return output;
-  }
+    let output = '';
 
-  private writeFindMethod(): string {
-    const { modelName, variableName, idType, relations } = this;
+    output += `  async get${className}Detail(\n    ${variableName}Id: number,\n    withRelation = true,\n  ): Promise<${className}Model> {\n`;
 
-    let output = `  async find${modelName}(${variableName}Id: ${idType}): Promise<${modelName}Model> {\n`;
-    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n`;
-    if (relations.length) {
-      output += `      include: {\n`;
-      for (const relation of relations) {
-        output += `        ${relation}: true,\n`;
-      }
-      output += `      },\n`;
+    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n      include: withRelation\n        ? {\n`;
+
+    const { o, m } = modelRelations[modelName];
+
+    for (const item of o) {
+      output += `          ${item}: true,\n`;
     }
-    output += `    });\n\n`;
-    output += `    if (!${variableName}) {\n      throw new NotFoundException(\n        await this.i18n.t('general.NOT_FOUND', {\n          args: {\n            model: '${modelName}',\n            condition: 'id',\n            value: ${variableName}Id,\n          },\n        }),\n      );\n    }\n\n`;
+
+    for (const item of m) {
+      output += `          ${item}: true,\n`;
+    }
+
+    output += `        }\n        : null,\n    });\n\n`;
+
+    output += `    if (!${variableName}) {\n      throw new NotFoundException(\n        await this.i18n.t('general.NOT_FOUND', {\n          args: {\n            model: this.moduleName,\n            condition: 'id',\n            value: ${variableName}Id,\n          },\n        }),\n      );\n    }\n\n`;
+
     output += `    return ${variableName};\n  }\n\n`;
 
     return output;
   }
 
-  private writeFilterMethod(): string {
+  private writeListMethod(): string {
     const {
+      className,
+      variableName,
       uppperCamelPluralizeName,
       camelPluralizeName,
-      variableName,
-      relations,
-      modelName,
     } = this;
 
-    let output = `  async find${uppperCamelPluralizeName}(\n    where: ${uppperCamelPluralizeName}FindFilter,\n    order: ${uppperCamelPluralizeName}FindOrder[],\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    let output = '';
 
-    output += `    const queryOptions: Prisma.${modelName}FindManyArgs = {};\n`;
-    output += `    const whereOptions = generateWhereOptions(where);\n    const orderOptions = generateOrderOptions(order);\n\n`;
-    output += `    if (!R.isEmpty(whereOptions)) {\n      queryOptions.where = whereOptions;\n    }\n\n    if (orderOptions.length) {\n      queryOptions.orderBy = orderOptions;\n    }\n\n`;
+    output += `  async get${className}List(\n    where: ${className}FindFilter,\n    order: ${className}FindOrder[],\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+
+    output += `    const queryOptions: Prisma.${className}FindManyArgs = {};\n    const whereOptions = generateWhereOptions(where);\n    const orderOptions = generateOrderOptions(order);\n\n`;
+
+    output += `    if (!R.isEmpty(whereOptions)) {\n      queryOptions.where = {\n        ...whereOptions,\n      };\n    }\n\n`;
+
+    output += `    queryOptions.orderBy = orderOptions.length\n      ? orderOptions\n      : [{ id: 'desc' }];\n\n`;
+
     output += `    const { skip, take } = prismaPaging(paging);\n    queryOptions.skip = skip;\n    queryOptions.take = take;\n\n`;
-    if (relations.length) {
-      output += `    const ${camelPluralizeName} = await this.prisma.${variableName}.findMany({\n      ...queryOptions,\n`;
-      output += `      include: {\n`;
-      for (const relation of relations) {
-        output += `        ${relation}: true,\n`;
-      }
-      output += `      },\n    });\n`;
-    } else {
-      output += `    const ${camelPluralizeName} = await this.prisma.${variableName}.findMany(queryOptions);\n`;
-    }
 
-    output += `    const totalCount = await this.prisma.${variableName}.count({\n      where: queryOptions.where,\n    });\n\n`;
+    output += `    const ${camelPluralizeName} = await this.prisma.${variableName}.findMany(queryOptions);\n    const totalCount = await this.prisma.${variableName}.count({\n      where: whereOptions,\n    });\n\n`;
+
     output += `    return {\n      ${camelPluralizeName},\n      paging: pagingResponse(paging, totalCount),\n    };\n  }\n\n`;
 
     return output;
   }
 
   private writeCreateMethod(): string {
-    const { modelName, variableName } = this;
+    const { className, variableName } = this;
+    let output = `  async createNew${className}(\n    me: UserModel,\n    input: New${className}Input,\n  ): Promise<${className}Model> {\n`;
 
-    let output = `  async create${modelName}(input: New${modelName}Input, myId: number): Promise<${modelName}Model> {\n`;
+    output += `    let new${className};\n\n`;
+    const dates = this.findDateProperties();
 
-    output += `    let new${modelName};\n\n`;
+    if (dates.length) {
+      this.needTimeCheck = true;
+    }
 
-    output += `    try {\n      new${modelName} = await this.prisma.${variableName}.create({\n        data: {\n          ...input,\n          creatorId: myId,\n          modifierId: myId,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
+    const {
+      excepts: dateExcepts,
+      validation: dateValidation,
+      creation: dateCreation,
+    } = this.writeDatesValidation(dates);
 
-    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'create',\n      additionalContent: JSON.stringify(input),\n    });\n\n`;
+    let creationOutput = '          ...input,\n';
 
-    output += `    return new${modelName};\n  }\n\n`;
+    if (dates.length) {
+      output += `    const {\n${dateExcepts}      ...rest,\n    } = input;\n\n`;
+
+      output += dateValidation;
+
+      creationOutput = dateCreation + `          ...rest,\n`;
+    }
+
+    output += `    try {\n      new${className} = await this.prisma.${variableName}.create({\n        data: {\n`;
+
+    output += creationOutput;
+
+    output += `          creatorId: me.id,\n          modifierId: me.id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
+
+    if (this.ifLog) {
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'create',\n      params: JSON.stringify(input),\n    });\n\n`;
+    }
+
+    output += `    return new${className};\n  }\n\n`;
 
     return output;
   }
 
   private writeUpdateMethod(): string {
-    const { modelName, variableName, idType } = this;
+    const { className, variableName } = this;
+    let output = `  async update${className}(\n    me: UserModel,\n    ${variableName}Id: number,\n    input: Edit${className}Input,\n  ): Promise<${className}Model> {\n`;
 
-    let output = `  async update${modelName}(\n    ${variableName}Id: ${idType},\n    input: Edit${modelName}Input,\n    myId: number,\n  ): Promise<${modelName}Model> {\n`;
+    output += `    const old${className} = await this.get${className}(${variableName}Id, false);\n\n`;
 
-    output += `    await this.find${modelName}(${variableName}Id);\n\n`;
+    output += `    let new${className};\n\n`;
+    const dates = this.findDateProperties();
 
-    output += `    let new${modelName};\n\n`;
+    const {
+      excepts: dateExcepts,
+      validation: dateValidation,
+      creation: dateCreation,
+    } = this.writeDatesValidation(dates);
 
-    output += `    try {\n      new${modelName} = await this.prisma.${variableName}.update({\n        data: {\n          ...input,\n          modifierId: myId,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
+    let updatingOutput = '          ...input,\n';
 
-    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'update',\n      additionalContent: JSON.stringify(input),\n    });\n\n`;
+    if (dates.length) {
+      output += `    const {\n${dateExcepts}      ...rest,\n    } = input;\n\n`;
 
-    output += `    return new${modelName};\n  }\n\n`;
+      output += dateValidation;
+
+      updatingOutput = dateCreation + `          ...rest,\n`;
+    }
+
+    output += `    try {\n      new${className} = await this.prisma.${variableName}.update({\n        data: {\n`;
+
+    output += updatingOutput;
+
+    output += `          modifierId: me.id,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
+
+    if (this.ifLog) {
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'update',\n      params: JSON.stringify({\n        old: old${className},\n        new: input,\n      }),\n    });\n\n`;
+    }
+
+    output += `    return new${className};\n  }\n\n`;
 
     return output;
   }
 
   private writeDeleteMethod(): string {
-    const { modelName, variableName, idType } = this;
+    const { className, variableName } = this;
+    let output = `  async delete${className}(\n    me: UserModel,\n    ${variableName}Id: number,\n  ): Promise<boolean> {\n`;
+    output += `    const old${className} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n    });\n\n`;
 
-    let output = `  async delete${modelName}(${variableName}Id: ${idType}, myId: number): Promise<boolean> {\n`;
+    output += `    if (!old${className}) {\n      return true;\n    }\n\n`;
 
-    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n      },\n    });\n\n`;
+    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
 
-    output += `    if (!${variableName}) {\n      return true;\n    }\n\n`;
+    if (this.ifLog) {
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'delete',\n      params: JSON.stringify({}),\n    });\n\n`;
+    }
 
-    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n      await this.prisma.${variableName}.update({\n        data: {\n          modifierId: myId,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: '${modelName}',\n          },\n        }),\n      );\n    }\n\n`;
-
-    output += `    await this.logService.createLog({\n      userId: myId,\n      moduleName: this.moduleName,\n      action: 'delete',\n      additionalContent: JSON.stringify({}),\n    });\n\n`;
-
-    output += `    return true;\n  }\n`;
+    output += `    return true;\n  }\n\n`;
 
     return output;
   }
 
-  private getIdType() {
-    const { data } = this;
+  private findDateProperties(): string[] {
+    const { properties } = this;
 
-    const idLine = data.find((line) => R.includes('@id', line)) || [];
-    this.idType = idLine[1] === 'String' ? 'string' : 'number';
-  }
-
-  private getRelations() {
-    const { models, data } = this;
-
-    const relations = [];
-
-    for (const line of data) {
-      if (R.includes(line[1], models)) {
-        relations.push(line[0]);
+    const dates = [];
+    for (const property of properties) {
+      if (R.includes(property.key, ['deletedAt', 'createdAt', 'updatedAt'])) {
+        continue;
+      }
+      if (property.type === DataType.DateTime) {
+        dates.push(property.key);
       }
     }
-    this.relations = relations;
+
+    if (dates.length) {
+      this.needTimeCheck = true;
+    }
+
+    return dates;
+  }
+
+  private writeDatesValidation(dates: string[]): {
+    excepts: string;
+    validation: string;
+    creation: string;
+  } {
+    let validation = ``;
+    let excepts = ``;
+    let creation = ``;
+
+    for (const item of dates) {
+      excepts += `      ${item},\n`;
+      validation += `    if (!dayjs(${item}).isValid()) {\n      throw new NotAcceptableException(\n        await this.i18n.t('general.DATE_INVALID', {\n          args: {\n            date: ${item},\n          },\n        }),\n      );\n    }\n`;
+      creation += `          ${item}: dayjs(${item}).toDate(),\n`;
+    }
+
+    return {
+      validation,
+      excepts,
+      creation,
+    };
   }
 }

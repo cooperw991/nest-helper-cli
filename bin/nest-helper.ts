@@ -13,6 +13,7 @@ const bootstrap = () => {
       'Output the current version.',
     )
     .usage('<command> [options]')
+    .option('-r, --replace', 'Replace exising files')
     .helpOption('-h, --help', 'Output usage information.');
 
   new GenerateCommand(new GenerateAction()).load(program);

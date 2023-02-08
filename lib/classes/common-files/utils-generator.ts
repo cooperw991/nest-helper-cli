@@ -42,7 +42,7 @@ export class CommonUtilsGenerator extends BaseHandler {
   }
 
   private generatePaginationUtility() {
-    let output = `import { PagingInfo } from '../dto/paging-info.dto';\nimport { PagingQuery } from '../interfaces/paging-query.interface';\n\n`;
+    let output = `import { PagingInfo } from '../dto/paging-info.object';\nimport { PagingQuery } from '../interfaces/paging-query.interface';\n\n`;
 
     output += `export function fillWithDefaultPaging(\n  paging: PagingQuery | null | undefined,\n): PagingQuery {\n  if (!paging) {\n    return {\n      offset: 0,\n      limit: 10,\n    };\n  }\n\n  if (!paging.offset) {\n    paging.offset = 0;\n  }\n  if (!paging.limit) {\n    paging.limit = 10;\n  }\n  return paging;\n}\n\n`;
 

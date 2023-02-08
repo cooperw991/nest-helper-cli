@@ -1,4 +1,4 @@
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import { Command } from 'commander';
 
 import { Input } from '../lib/inputs';
@@ -15,20 +15,48 @@ export class GenerateCommand extends AbstractCommand {
     {
       name: 'module',
       alias: 'mo',
-      description: 'Generate a new module',
+      description: 'Generate whole files of module',
+    },
+    {
+      name: 'model',
+      alias: 'mod',
+      description: 'Generate the model file',
+    },
+    {
+      name: 'service',
+      alias: 's',
+      description: 'Generate the service file',
+    },
+    {
+      name: 'resolver',
+      alias: 'r',
+      description: 'Generate the resolver file',
+    },
+    {
+      name: 'dto',
+      alias: 'd',
+      description: 'Generate the files of dto',
     },
   ];
 
   public load(program: Command) {
     program
-      .command('generate <schematic> [name]')
+      .command('generate')
       .alias('g')
+      .argument('<schematic>', 'string argument')
+      .argument('[name]', 'string argument')
+      .option('-r, --replace <r]', 'Replace exising files')
       .description(this.buildDescription())
       .action(async (schematic: string, name: string) => {
+        const options = program.opts();
         const inputs: Input[] = [];
+        const opts: Input[] = [];
         inputs.push({ name: 'schematic', value: schematic });
         inputs.push({ name: 'name', value: name });
-        await this.action.handle(inputs, []);
+        for (const opt in options) {
+          opts.push({ name: opt, value: options[opt] });
+        }
+        await this.action.handle(inputs, opts);
       });
     program.parse(process.argv);
   }

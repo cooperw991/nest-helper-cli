@@ -61,3 +61,19 @@ export async function createFile(
 
   return true;
 }
+
+export async function ifFileExsist(path: string) {
+  return fs.existsSync(path);
+}
+
+export async function renameFile(currentPath: string, destinationPath: string) {
+  return new Promise((resolve, reject) => {
+    fs.rename(currentPath, destinationPath, (err) => {
+      if (err) {
+        reject(false);
+      } else {
+        resolve(true);
+      }
+    });
+  });
+}

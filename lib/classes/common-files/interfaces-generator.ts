@@ -16,7 +16,7 @@ export class CommonInterfacesGenerator extends BaseHandler {
   private generateGqlContextInterface() {
     let output = `import * as Dataloader from 'dataloader';\n\n`;
 
-    output += `import { CreatorAndModifier } from '../dto/creator-and-modifier.dto';\n\n`;
+    output += `import { CreatorAndModifier } from '../dto/creator-and-modifier.object';\n\n`;
 
     output += `export interface AppGraphqlContext {\n  req: Request;\n  res: Response;\n  creatorAndModifierLoader: Dataloader<[number, number], CreatorAndModifier>\n}\n`;
 
