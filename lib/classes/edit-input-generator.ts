@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import { p2, p4 } from '../utils/pad.util';
 
 import { FileGenerator } from './file-generator';
 import {
@@ -45,7 +46,7 @@ export class EditInputGenerator extends FileGenerator {
   private writeEditInputClass(): string {
     const { properties } = this;
 
-    let output = `@InputType({\n  description: '',\n})\n`;
+    let output = `@InputType({\n${p2}description: '',\n})\n`;
     output += `export class Edit${this.className}Input {\n`;
 
     for (const property of properties) {
@@ -85,7 +86,7 @@ export class EditInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType} | null`;
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params Required For Updating ${this.className} ',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: 'Params Required For Updating ${this.className} ',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

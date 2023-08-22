@@ -7,6 +7,7 @@ import {
   ModelProperty,
 } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { p2, p4 } from '../utils/pad.util';
 
 export class ModelGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -67,7 +68,7 @@ export class ModelGenerator extends FileGenerator {
   private writeModelClass(): string {
     const { modelName, properties } = this;
 
-    let output = `@ObjectType({\n  description: 'Data Model of ${modelName}',\n})\n`;
+    let output = `@ObjectType({\n${p2}description: 'Data Model of ${modelName}',\n})\n`;
     output += `export class ${modelName}Model extends BaseModel {\n`;
 
     for (const property of properties) {
@@ -104,7 +105,7 @@ export class ModelGenerator extends FileGenerator {
     let tsTypeStr = tsType;
 
     if (nullable || type === DataType.Relation) {
-      nullableStr = `    nullable: true,\n`;
+      nullableStr = `${p4}nullable: true,\n`;
       keyNameStr = `${key}?`;
     }
 
@@ -124,7 +125,7 @@ export class ModelGenerator extends FileGenerator {
       }
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n${nullableStr}  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${nullableStr}${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

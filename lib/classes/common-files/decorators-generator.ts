@@ -4,17 +4,17 @@ export class CommonDecoratorsGenerator extends BaseHandler {
   constructor() {
     super();
 
-    this.outputs['me.decorator.ts'] = this.generateDecoratorMe();
+    this.outputs['current-user.decorator.ts'] = this.generateDecoratorMe();
   }
 
   public async generateFiles() {
-    await this.writeFile('me.decorator.ts', 'decorators');
+    await this.writeFile('current-user.decorator.ts', 'decorators');
   }
 
   private generateDecoratorMe() {
     let output = `import { createParamDecorator } from '@nestjs/common';\n\n`;
 
-    output += `export const Me = createParamDecorator((_data, req) => {\n  return req.user;\n});\n`;
+    output += `export const CurrentUser = createParamDecorator((_data, req) => {\n  return req.user;\n});\n`;
 
     return output;
   }

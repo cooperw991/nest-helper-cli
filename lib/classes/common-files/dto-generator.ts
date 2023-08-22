@@ -16,9 +16,9 @@ export class CommonDTOsGenerator extends BaseHandler {
   private generateDTOCreatorAndModifier() {
     let output = `import { Field, ObjectType } from 'type-graphql';\n\n`;
 
-    output += `import { User } from '../../modules/user/user.entity';\n\n`;
+    output += `import { UserModel } from '@Module/user/user.entity';\n\n`;
 
-    output += `@ObjectType()\nexport class CreatorAndModifier {\n  @Field(() => User)\n  creator: User;\n\n  @Field(() => User)\n  lastModifier: User;\n}\n`;
+    output += `@ObjectType()\nexport class CreatorAndModifier {\n  @Field(() => UserModel, { nullable: true })\n  creator: UserModel | null;\n\n  @Field(() => UserModel, { nullable: true })\n  lastModifier: UserModel | null;\n}\n`;
 
     this.outputs['creator-and-modifier.object.ts'] = output;
   }

@@ -6,6 +6,7 @@ import {
   ModelProperty,
 } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { p2, p4 } from '../utils/pad.util';
 
 export class NewInputGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -46,7 +47,7 @@ export class NewInputGenerator extends FileGenerator {
     const { properties } = this;
 
     let output = `import { Edit${this.className}Input } from './edit-${this.moduleName}.input';\n\n`;
-    output += `@InputType({\n  description: '',\n})\n`;
+    output += `@InputType({\n${p2}description: 'Params Required For Creating ${this.modelName}',\n})\n`;
     output += `export class New${this.className}Input extends Edit${this.className}Input {\n`;
 
     this.enumRelations = [];
@@ -99,7 +100,7 @@ export class NewInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType}`;
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params Required For Creating ${this.modelName}',\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `  @Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

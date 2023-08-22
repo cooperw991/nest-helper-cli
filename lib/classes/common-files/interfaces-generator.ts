@@ -1,3 +1,4 @@
+import { p2 } from '../../utils/pad.util';
 import { BaseHandler } from './base-handler';
 
 export class CommonInterfacesGenerator extends BaseHandler {
@@ -18,7 +19,7 @@ export class CommonInterfacesGenerator extends BaseHandler {
 
     output += `import { CreatorAndModifier } from '../dto/creator-and-modifier.object';\n\n`;
 
-    output += `export interface AppGraphqlContext {\n  req: Request;\n  res: Response;\n  creatorAndModifierLoader: Dataloader<[number, number], CreatorAndModifier>\n}\n`;
+    output += `export interface AppGraphqlContext {\n${p2}req: Request;\n${p2}res: Response;\n${p2}creatorAndModifierLoader: Dataloader<[number, number], CreatorAndModifier>\n}\n`;
 
     this.outputs['app-graphql-context.interface.ts'] = output;
   }
@@ -26,7 +27,7 @@ export class CommonInterfacesGenerator extends BaseHandler {
   private generatePagingQueryInterface() {
     let output = `import { Field, InputType, Int } from 'type-graphql';\n\n`;
 
-    output += `@InputType()\nexport class PagingQuery {\n  @Field(() => Int, { nullable: true })\n  offset: number;\n\n  @Field(() => Int, { nullable: true })\n  limit: number;\n}\n`;
+    output += `@InputType()\nexport class PagingQuery {\n${p2}@Field(() => Int, { nullable: true })\n${p2}offset: number;\n\n${p2}@Field(() => Int, { nullable: true })\n${p2}limit: number;\n}\n`;
 
     this.outputs['paging-query.interface.ts'] = output;
   }

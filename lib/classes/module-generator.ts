@@ -1,5 +1,6 @@
 import { FileGenerator } from './file-generator';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { p2 } from '../utils/pad.util';
 
 export class ModuleGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -26,7 +27,7 @@ export class ModuleGenerator extends FileGenerator {
   private writeModuleClass(): string {
     const { className } = this;
 
-    const output = `@Module({\n  providers: [${className}Service, ${className}Resolver],\n  exports: [${className}Service],\n})\nexport class ${className}Module {}\n`;
+    const output = `@Module({\n${p2}providers: [${className}Service, ${className}Resolver],\n${p2}exports: [${className}Service],\n})\nexport class ${className}Module {}\n`;
 
     return output;
   }

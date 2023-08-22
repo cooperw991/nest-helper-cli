@@ -1,5 +1,6 @@
 import { FileGenerator } from './file-generator';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { p2 } from '../utils/pad.util';
 
 export class PagingObjectGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -25,8 +26,8 @@ export class PagingObjectGenerator extends FileGenerator {
   }
 
   private writePagingClass(): string {
-    let output = `@ObjectType({\n  description: '${this.uppperCamelPluralizeName} With Paging',\n})\n`;
-    output += `export class ${this.uppperCamelPluralizeName}WithPaging {\n  @Field(() => [${this.className}Model])\n  ${this.camelPluralizeName}: ${this.className}Model[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n}\n`;
+    let output = `@ObjectType({\n${p2}description: '${this.uppperCamelPluralizeName} With Paging',\n})\n`;
+    output += `export class ${this.uppperCamelPluralizeName}WithPaging {\n${p2}@Field(() => [${this.className}Model])\n${p2}${this.camelPluralizeName}: ${this.className}Model[];\n\n${p2}@Field(() => PagingInfo)\n${p2}paging: PagingInfo;\n}\n`;
 
     return output;
   }

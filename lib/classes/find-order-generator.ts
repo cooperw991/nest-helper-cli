@@ -7,6 +7,7 @@ import {
   ModelProperty,
 } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { p2 } from '../utils/pad.util';
 
 export class FindOrderGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -36,14 +37,14 @@ export class FindOrderGenerator extends FileGenerator {
     }
 
     output += `}\n\n`;
-    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: '${this.className}FindOrderKeys',\n  description: 'Enum Of ${this.className} Orders',\n});\n\n`;
+    output += `registerEnumType(${this.className}FindOrderKeys, {\n${p2}name: '${this.className}FindOrderKeys',\n${p2}description: 'Enum Of ${this.className} Orders',\n});\n\n`;
 
     return output;
   }
 
   private writeFindOrderlass(): string {
-    let output = `@InputType({\n  description: 'Orders For ${this.uppperCamelPluralizeName} Querying',\n})\n`;
-    output += `export class ${this.className}FindOrder {\n  @Field(() => ${this.className}FindOrderKeys)\n  by: ${this.className}FindOrderKeys;\n\n  @Field(() => Boolean)\n  asc: boolean;\n}\n`;
+    let output = `@InputType({\n${p2}description: 'Orders For ${this.uppperCamelPluralizeName} Querying',\n})\n`;
+    output += `export class ${this.className}FindOrder {\n${p2}@Field(() => ${this.className}FindOrderKeys)\n${p2}by: ${this.className}FindOrderKeys;\n\n${p2}@Field(() => Boolean)\n${p2}asc: boolean;\n}\n`;
 
     return output;
   }

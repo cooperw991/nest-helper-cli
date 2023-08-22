@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import { p2, p4 } from '../utils/pad.util';
 
 import { FileGenerator } from './file-generator';
 import {
@@ -45,7 +46,7 @@ export class FindFilterGenerator extends FileGenerator {
   private writeFindFilterClass(): string {
     const { properties } = this;
 
-    let output = `@InputType({\n  description: '',\n})\n`;
+    let output = `@InputType({\n${p2}description: 'Params For Filtering ${this.uppperCamelPluralizeName}',\n})\n`;
     output += `export class ${this.className}FindFilter {\n`;
 
     for (const property of properties) {
@@ -75,7 +76,7 @@ export class FindFilterGenerator extends FileGenerator {
 
       const keyNameStr = key;
 
-      const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params For Filtering ${this.uppperCamelPluralizeName}',\n    nullable: true,\n  })\n  ${keyNameStr}_LTE_DATE: ${tsTypeStr};\n\n  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}_GTE_DATE: ${tsTypeStr};\n\n`;
+      const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}_LTE_DATE: ${tsTypeStr};\n\n${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}_GTE_DATE: ${tsTypeStr};\n\n`;
 
       return output;
     }
@@ -85,7 +86,7 @@ export class FindFilterGenerator extends FileGenerator {
 
     const keyNameStr = R.includes(tsType, enumRelations) ? `${key}_EQ` : key;
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

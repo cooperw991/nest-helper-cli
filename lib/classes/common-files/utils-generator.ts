@@ -1,3 +1,4 @@
+import { p2, p4, p6, p8 } from '../../utils/pad.util';
 import { BaseHandler } from './base-handler';
 
 export class CommonUtilsGenerator extends BaseHandler {
@@ -18,7 +19,7 @@ export class CommonUtilsGenerator extends BaseHandler {
   }
 
   private generateErrorUtility() {
-    const output = `export const errorMsg = (msgArr = []) => {\n  return {\n    // Global\n    UNAUTHENTICATED: '',\n    PERMISSION_DENY: '',\n    INTERNAL_SERVER_ERROR: '',\n    NOT_EXIST: '',\n  };\n};\n`;
+    const output = `export const errorMsg = (msgArr = []) => {\n${p2}return {\n${p4}// Global\n${p4}UNAUTHENTICATED: '',\n${p4}PERMISSION_DENY: '',\n${p4}INTERNAL_SERVER_ERROR: '',\n${p4}NOT_EXIST: '',\n${p2}};\n};\n`;
 
     this.outputs['errors.utility.ts'] = output;
   }
@@ -26,15 +27,15 @@ export class CommonUtilsGenerator extends BaseHandler {
   private generateLoggerUtility() {
     let output = `import * as winston from 'winston';\nimport * as dayjs from 'dayjs';\n\n`;
 
-    output += `const { combine, timestamp, printf } = winston.format;\n\nconst myFormat = printf((info) => {\n  return \`\${info.timestamp} \${info.level}: \${info.message}\`;\n});\n\n`;
+    output += `const { combine, timestamp, printf } = winston.format;\n\nconst myFormat = printf((info) => {\n${p2}return \`\${info.timestamp} \${info.level}: \${info.message}\`;\n});\n\n`;
 
     output += `const time = dayjs().format('YYYY-MM-DD');\n\n`;
 
-    output += `winston.addColors({\n  error: 'red',\n  warn: 'yellow',\n  info: 'cyan',\n  debug: 'green',\n});\n\n`;
+    output += `winston.addColors({\n${p2}error: 'red',\n${p2}warn: 'yellow',\n${p2}info: 'cyan',\n${p2}debug: 'green',\n});\n\n`;
 
-    output += `const logger = winston.createLogger({\n  level: 'info',\n  format: combine(timestamp(), myFormat),\n  transports: [\n    //\n    // - Write to all logs with level \`info\` and below to \`combined.log\`\n    // - Write all logs error (and below) to \`error.log\`.\n    //\n    new winston.transports.File({\n      filename: \`logs/\${time}-error.log\`,\n      level: 'error',\n    }),\n    new winston.transports.File({ filename: \`logs/\${time}-combined.log\` }),\n  ],\n});\n\n`;
+    output += `const logger = winston.createLogger({\n${p2}level: 'info',\n${p2}format: combine(timestamp(), myFormat),\n${p2}transports: [\n${p4}//\n${p4}// - Write to all logs with level \`info\` and below to \`combined.log\`\n${p4}// - Write all logs error (and below) to \`error.log\`.\n${p4}//\n${p4}new winston.transports.File({\n${p6}filename: \`logs/\${time}-error.log\`,\n${p6}level: 'error',\n${p4}}),\n${p4}new winston.transports.File({ filename: \`logs/\${time}-combined.log\` }),\n${p2}],\n});\n\n`;
 
-    output += `//\n// If we're not in production then log to the \`console\` with the format:\n// \`\${info.level}: \${info.message} JSON.stringify({ ...rest }) \`\n//\nif (process.env.NODE_ENV !== 'production') {\n  logger.add(\n    new winston.transports.Console({\n      format: winston.format.combine(\n        winston.format.colorize(),\n        winston.format.simple(),\n      ),\n    }),\n  );\n}\n\n`;
+    output += `//\n// If we're not in production then log to the \`console\` with the format:\n// \`\${info.level}: \${info.message} JSON.stringify({ ...rest }) \`\n//\nif (process.env.NODE_ENV !== 'production') {\n${p2}logger.add(\n${p4}new winston.transports.Console({\n${p6}format: winston.format.combine(\n${p8}winston.format.colorize(),\n${p8}winston.format.simple(),\n${p6}),\n${p4}}),\n${p2});\n}\n\n`;
 
     output += `export default logger;\n`;
 
@@ -44,9 +45,9 @@ export class CommonUtilsGenerator extends BaseHandler {
   private generatePaginationUtility() {
     let output = `import { PagingInfo } from '../dto/paging-info.object';\nimport { PagingQuery } from '../interfaces/paging-query.interface';\n\n`;
 
-    output += `export function fillWithDefaultPaging(\n  paging: PagingQuery | null | undefined,\n): PagingQuery {\n  if (!paging) {\n    return {\n      offset: 0,\n      limit: 10,\n    };\n  }\n\n  if (!paging.offset) {\n    paging.offset = 0;\n  }\n  if (!paging.limit) {\n    paging.limit = 10;\n  }\n  return paging;\n}\n\n`;
+    output += `export function fillWithDefaultPaging(\n${p2}paging: PagingQuery | null | undefined,\n): PagingQuery {\n${p2}if (!paging) {\n${p4}return {\n${p6}offset: 0,\n${p6}limit: 10,\n${p4}};\n${p2}}\n\n${p2}if (!paging.offset) {\n${p4}paging.offset = 0;\n${p2}}\n${p2}if (!paging.limit) {\n${p4}paging.limit = 10;\n${p2}}\n${p2}return paging;\n}\n\n`;
 
-    output += `export function pagingResponse(paging: any, totalCount: number): PagingInfo {\n  paging = fillWithDefaultPaging(paging);\n  return {\n    totalCount,\n    currentOffset: paging.offset,\n    currentLimit: paging.limit,\n  };\n}\n`;
+    output += `export function pagingResponse(paging: any, totalCount: number): PagingInfo {\n${p2}paging = fillWithDefaultPaging(paging);\n${p2}return {\n${p4}totalCount,\n${p4}currentOffset: paging.offset,\n${p4}currentLimit: paging.limit,\n${p2}};\n}\n`;
 
     this.outputs['pagination.utility.ts'] = output;
   }
@@ -55,7 +56,7 @@ export class CommonUtilsGenerator extends BaseHandler {
     const pattern1 =
       /[\ |\~|\`|\!|\@|\#|\$|\%|\^|\&|\*|\(|\)|\-|\_|\+|\=|\||\\|\[|\]|\{|\}|\;|\:|\"|\'|\,|\<|\.|\>|\/|\?/\，/\。/\；/\：/\“/\”/\》/\《/\|/\{/\}/\、/\!/\~/\`]/g;
     const pattern2 = /\s+/g;
-    const output = `export function splitWordsBySymbol(value: string): string[] {\n  return value\n    .replace(\n      ${pattern1},\n      ' ',\n    )\n    .replace(${pattern2}, ' ')\n    .split(' ');\n}\n`;
+    const output = `export function splitWordsBySymbol(value: string): string[] {\n${p2}return value\n${p4}.replace(\n${p6}${pattern1},\n${p6}' ',\n${p4})\n${p4}.replace(${pattern2}, ' ')\n${p4}.split(' ');\n}\n`;
 
     this.outputs['words.utility.ts'] = output;
   }

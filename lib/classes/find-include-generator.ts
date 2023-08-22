@@ -1,4 +1,5 @@
 import * as R from 'ramda';
+import { p2 } from '../utils/pad.util';
 
 import { FileGenerator } from './file-generator';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
@@ -24,17 +25,17 @@ export class FindIncludeGenerator extends FileGenerator {
   private writeFindIncludeClass(): string {
     const { className, modelRelations, modelName } = this;
 
-    let output = `@InputType({\n  description: '${className} Relations Querying',\n})\n`;
+    let output = `@InputType({\n${p2}description: '${className} Relations Querying',\n})\n`;
     output += `export class ${this.className}FindInclude {\n`;
 
     const { o, m } = modelRelations[modelName];
 
     for (const item of o) {
-      output += `@Field(() => Boolean, { nullable: true })\n  ${item.key}: boolean | null;\n\n`;
+      output += `@Field(() => Boolean, { nullable: true })\n${p2}${item.key}: boolean | null;\n\n`;
     }
 
     for (const item of m) {
-      output += `@Field(() => Boolean, { nullable: true })\n  ${item.key}: boolean | null;\n\n`;
+      output += `@Field(() => Boolean, { nullable: true })\n${p2}${item.key}: boolean | null;\n\n`;
     }
 
     output = R.dropLast(1, output);
