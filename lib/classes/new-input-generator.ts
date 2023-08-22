@@ -99,7 +99,7 @@ export class NewInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType}`;
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params Required For Creating ${this.modelName}',\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

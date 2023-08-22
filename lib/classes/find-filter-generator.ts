@@ -58,6 +58,7 @@ export class FindFilterGenerator extends FileGenerator {
   }
 
   private writeField(property: ModelProperty): string {
+    const { enumRelations } = this;
     const { key, type, gqlType, tsType, isArray } = property;
 
     if (
@@ -68,10 +69,21 @@ export class FindFilterGenerator extends FileGenerator {
       return '';
     }
 
+    if (type === DataType.DateTime) {
+      const gqlTypeStr = gqlType;
+      const tsTypeStr = `${tsType} | null`;
+
+      const keyNameStr = key;
+
+      const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params For Filtering ${this.uppperCamelPluralizeName}',\n    nullable: true,\n  })\n  ${keyNameStr}_LTE_DATE: ${tsTypeStr};\n\n  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}_GTE_DATE: ${tsTypeStr};\n\n`;
+
+      return output;
+    }
+
     const gqlTypeStr = gqlType;
     const tsTypeStr = `${tsType} | null`;
 
-    const keyNameStr = key;
+    const keyNameStr = R.includes(tsType, enumRelations) ? `${key}_EQ` : key;
 
     const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
 

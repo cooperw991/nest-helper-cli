@@ -36,13 +36,13 @@ export class FindOrderGenerator extends FileGenerator {
     }
 
     output += `}\n\n`;
-    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: '${this.className}FindOrderKeys',\n  description: '',\n});\n\n`;
+    output += `registerEnumType(${this.className}FindOrderKeys, {\n  name: '${this.className}FindOrderKeys',\n  description: 'Enum Of ${this.className} Orders',\n});\n\n`;
 
     return output;
   }
 
   private writeFindOrderlass(): string {
-    let output = `@InputType({\n  description: '',\n})\n`;
+    let output = `@InputType({\n  description: 'Orders For ${this.uppperCamelPluralizeName} Querying',\n})\n`;
     output += `export class ${this.className}FindOrder {\n  @Field(() => ${this.className}FindOrderKeys)\n  by: ${this.className}FindOrderKeys;\n\n  @Field(() => Boolean)\n  asc: boolean;\n}\n`;
 
     return output;

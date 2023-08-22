@@ -11,7 +11,7 @@ export class ServiceGenerator extends FileGenerator {
     this.models = params.models;
     this.needTimeCheck = false;
     this.ifLog = ifLog;
-    this.exceptions = ['InternalServerErrorException', 'NotFoundException'];
+    this.exceptions = ['InternalServerErrorException', 'GoneException'];
 
     this.output += this.writeServiceClass();
     this.output += this.writeGetMethod();
@@ -41,25 +41,24 @@ export class ServiceGenerator extends FileGenerator {
       output += `import dayjs from 'dayjs';\n`;
       this.exceptions.push('NotAcceptableException');
     }
-    output += `import { Injectable, ${[...new Set(this.exceptions)].join(
-      ', ',
-    )}, } from '@nestjs/common';\n`;
-    output += `import { PrismaService } from 'nestjs-prisma';\n`;
+    output += `import { Injectable, Logger, ${[
+      ...new Set(this.exceptions),
+    ].join(', ')}, } from '@nestjs/common';\n`;
     output += `import { Prisma } from '@prisma/client';\n\n`;
     output += `import { I18nService } from 'nestjs-i18n';\n`;
-    output += `import { Logger } from '@nestjs/common';\n\n`;
+    output += `import { PrismaService } from 'nestjs-prisma';\n\n`;
 
     output += `import { PagingQuery } from '@Dto/paging-query.input';\n`;
-    output += `import { pagingResponse, prismaPaging } from '@Util/pagination.util';\n`;
-
-    output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n`;
     output += `import { LogService } from '@Module/log/services/log.service';\n`;
     output += `import { UserModel } from '@Module/user/models/user.model';\n`;
-    output += `import { ${className}Model } from '../models/${moduleName}.model';\n`;
-    output += `import { New${className}Input } from '../dto/new-${moduleName}.input';\n`;
+    output += `import { pagingResponse, prismaPaging } from '@Util/pagination.util';\n`;
+    output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n`;
     output += `import { Edit${className}Input } from '../dto/edit-${moduleName}.input';\n`;
     output += `import { ${className}FindFilter } from '../dto/find-filter.input';\n`;
+    output += `import { ${className}FindInclude } from '../dto/find-include.input';\n`;
     output += `import { ${className}FindOrder } from '../dto/find-order.input';\n`;
+    output += `import { ${className}Model } from '../models/${moduleName}.model';\n`;
+    output += `import { New${className}Input } from '../dto/new-${moduleName}.input';\n`;
     output += `import { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\n\n`;
 
     return output;
@@ -82,23 +81,23 @@ export class ServiceGenerator extends FileGenerator {
 
     let output = '';
 
-    output += `  async get${className}Detail(\n    ${variableName}Id: number,\n    withRelation = true,\n  ): Promise<${className}Model> {\n`;
+    output += `  async get${className}Detail(\n    ${variableName}Id: number,\n    include?: ${className}FindInclude,\n  ): Promise<${className}Model> {\n`;
 
-    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n      include: withRelation\n        ? {\n`;
+    output += `    const ${variableName} = await this.prisma.${variableName}.findFirst({\n      where: {\n        id: ${variableName}Id,\n        deletedAt: null,\n      },\n      include: include\n        ? {\n`;
 
     const { o, m } = modelRelations[modelName];
 
     for (const item of o) {
-      output += `          ${item}: true,\n`;
+      output += `            ${item.key}: true,\n`;
     }
 
     for (const item of m) {
-      output += `          ${item}: true,\n`;
+      output += `            ${item.key}: true,\n`;
     }
 
-    output += `        }\n        : null,\n    });\n\n`;
+    output += `          }\n        : null,\n    });\n\n`;
 
-    output += `    if (!${variableName}) {\n      throw new NotFoundException(\n        await this.i18n.t('general.NOT_FOUND', {\n          args: {\n            model: this.moduleName,\n            condition: 'id',\n            value: ${variableName}Id,\n          },\n        }),\n      );\n    }\n\n`;
+    output += `    if (!${variableName}) {\n      throw new GoneException(\n        await this.i18n.t('general.NOT_FOUND', {\n          args: {\n            model: this.moduleName,\n            condition: 'id',\n            value: ${variableName}Id,\n          },\n        }),\n      );\n    }\n\n`;
 
     output += `    return ${variableName};\n  }\n\n`;
 
@@ -111,11 +110,13 @@ export class ServiceGenerator extends FileGenerator {
       variableName,
       uppperCamelPluralizeName,
       camelPluralizeName,
+      modelRelations,
+      modelName,
     } = this;
 
     let output = '';
 
-    output += `  async get${className}List(\n    where: ${className}FindFilter,\n    order: ${className}FindOrder[],\n    paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    output += `  async get${className}List(\n    where: ${className}FindFilter,\n    order: ${className}FindOrder[],\n    paging: PagingQuery,\n    include: ${uppperCamelPluralizeName}FindInclude,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
 
     output += `    const queryOptions: Prisma.${className}FindManyArgs = {};\n    const whereOptions = generateWhereOptions(where);\n    const orderOptions = generateOrderOptions(order);\n\n`;
 
@@ -123,7 +124,21 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `    queryOptions.orderBy = orderOptions.length\n      ? orderOptions\n      : [{ id: 'desc' }];\n\n`;
 
-    output += `    const { skip, take } = prismaPaging(paging);\n    queryOptions.skip = skip;\n    queryOptions.take = take;\n\n`;
+    output += `    const { skip, take } = prismaPaging(paging);\n    queryOptions.skip = skip;\n    queryOptions.take = take;\n    queryOptions.include = include\n      ? {\n`;
+
+    // \n    queryOptions.include = {\n      };
+
+    const { o, m } = modelRelations[modelName];
+
+    for (const item of o) {
+      output += `            ${item.key}: include.${item.key}\n ?? false,\n`;
+    }
+
+    for (const item of m) {
+      output += `            ${item.key}: include.${item.key}\n ?? false,\n`;
+    }
+
+    output += `        }\n      : null;\n\n`;
 
     output += `    const ${camelPluralizeName} = await this.prisma.${variableName}.findMany(queryOptions);\n    const totalCount = await this.prisma.${variableName}.count({\n      where: whereOptions,\n    });\n\n`;
 
@@ -163,10 +178,10 @@ export class ServiceGenerator extends FileGenerator {
 
     output += creationOutput;
 
-    output += `          creatorId: me.id,\n          modifierId: me.id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
+    output += `          creatorId: me.id,\n          modifierId: me.id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.CREATE'),\n            model: this.moduleName,\n            method: 'createNew${className}',\n          },\n        }),\n      );\n    }\n\n`;
 
     if (this.ifLog) {
-      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'create',\n      params: JSON.stringify(input),\n    });\n\n`;
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'create',\n      additionalInfo: JSON.stringify(input),\n    });\n\n`;
     }
 
     output += `    return new${className};\n  }\n\n`;
@@ -178,7 +193,7 @@ export class ServiceGenerator extends FileGenerator {
     const { className, variableName } = this;
     let output = `  async update${className}(\n    me: UserModel,\n    ${variableName}Id: number,\n    input: Edit${className}Input,\n  ): Promise<${className}Model> {\n`;
 
-    output += `    const old${className} = await this.get${className}(${variableName}Id, false);\n\n`;
+    output += `    const old${className} = await this.get${className}Detail(${variableName}Id);\n\n`;
 
     output += `    let new${className};\n\n`;
     const dates = this.findDateProperties();
@@ -203,10 +218,10 @@ export class ServiceGenerator extends FileGenerator {
 
     output += updatingOutput;
 
-    output += `          modifierId: me.id,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
+    output += `          modifierId: me.id,\n        },\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.UPDATE'),\n            model: this.moduleName,\n            method: 'update${className}',\n          },\n        }),\n      );\n    }\n\n`;
 
     if (this.ifLog) {
-      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'update',\n      params: JSON.stringify({\n        old: old${className},\n        new: input,\n      }),\n    });\n\n`;
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleId: ${variableName}Id,\n      moduleName: this.moduleName,\n      action: 'update',\n      additionalInfo: JSON.stringify({\n        old: old${className},\n        new: input,\n      }),\n    });\n\n`;
     }
 
     output += `    return new${className};\n  }\n\n`;
@@ -221,10 +236,10 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `    if (!old${className}) {\n      return true;\n    }\n\n`;
 
-    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: this.moduleName,\n          },\n        }),\n      );\n    }\n\n`;
+    output += `    try {\n      await this.prisma.${variableName}.delete({\n        where: {\n          id: ${variableName}Id,\n        },\n      });\n    } catch (e) {\n      Logger.error(e.message);\n      throw new InternalServerErrorException(\n        await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n          args: {\n            action: await this.i18n.t('db.DELETE'),\n            model: this.moduleName,\n            method: 'delete${className}',\n          },\n        }),\n      );\n    }\n\n`;
 
     if (this.ifLog) {
-      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleName: this.moduleName,\n      action: 'delete',\n      params: JSON.stringify({}),\n    });\n\n`;
+      output += `    await this.logService.createLog({\n      userId: me.id,\n      moduleId: ${variableName}Id,\n      moduleName: this.moduleName,\n      action: 'delete',\n      additionalInfo: JSON.stringify({}),\n    });\n\n`;
     }
 
     output += `    return true;\n  }\n\n`;

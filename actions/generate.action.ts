@@ -10,6 +10,7 @@ import { NewInputGenerator } from '../lib/classes/new-input-generator';
 import { EditInputGenerator } from '../lib/classes/edit-input-generator';
 import { FindFilterGenerator } from '../lib/classes/find-filter-generator';
 import { FindOrderGenerator } from '../lib/classes/find-order-generator';
+import { FindIncludeGenerator } from '../lib/classes/find-include-generator';
 import { PagingObjectGenerator } from '../lib/classes/paging-dto-generator';
 import { ModuleGenerator } from '../lib/classes/module-generator';
 
@@ -137,12 +138,14 @@ export class GenerateAction extends AbstractAction {
     const newFindFilterGen = new FindFilterGenerator(params);
     const newFindOrderGen = new FindOrderGenerator(params);
     const pagingGen = new PagingObjectGenerator(params);
+    const includeGen = new FindIncludeGenerator(params);
 
     await editInputGen.generateFile(ifReplace);
     await newInputGen.generateFile(ifReplace);
     await newFindFilterGen.generateFile(ifReplace);
     await newFindOrderGen.generateFile(ifReplace);
     await pagingGen.generateFile(ifReplace);
+    await includeGen.generateFile(ifReplace);
   };
 
   generateModuleFiles = async (

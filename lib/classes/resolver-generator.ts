@@ -27,11 +27,12 @@ export class ResolverGenerator extends FileGenerator {
   private writeDependencies(): string {
     const { moduleName, className, uppperCamelPluralizeName } = this;
     let output = '';
-    output += `import {\n  Resolver,\n  Query,\n  Mutation,\n  Args,\n  Int,\n  ResolveField,\n  Root,\n  Context,\n} from '@nestjs/graphql';\n`;
-    output += `import { UseGuards } from '@nestjs/common';\n\n`;
-    output += `import { UserDecorator } from '@Decorator/user.decorator';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { RoleGuard } from '@Guard/role.guard';\nimport { RoleLimit, Roles } from '@Decorator/role.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { UserModel } from '@Module/user/models/user.model';\n\n`;
+    output += `import { UseGuards } from '@nestjs/common';\n`;
+    output += `import {\n  Resolver,\n  Query,\n  Mutation,\n  Args,\n  Int,\n  ResolveField,\n  Root,\n  Context,\n} from '@nestjs/graphql';\n\n`;
 
-    output += `import { ${className}Model } from '../models/${moduleName}.model';\nimport { New${className}Input } from '../dto/new-${moduleName}.input';\nimport { Edit${className}Input } from '../dto/edit-${moduleName}.input';\nimport { ${className}FindFilter } from '../dto/find-filter.input';\nimport { ${className}FindOrder } from '../dto/find-order.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\nimport { ${className}Service } from '../services/${moduleName}.service';\n\n`;
+    output += `import { UserDecorator } from '@Decorator/user.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { UserModel } from '@Module/user/models/user.model';\n\n`;
+
+    output += `import { Edit${className}Input } from '../dto/edit-${moduleName}.input';\nimport { ${className}FindFilter } from '../dto/find-filter.input';\nimport { ${className}FindInclude } from '../dto/find-include.input';\nimport { ${className}FindOrder } from '../dto/find-order.input';\nimport { New${className}Input } from '../dto/new-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\nimport { ${className}Model } from '../models/${moduleName}.model';\nimport { ${className}Service } from '../services/${moduleName}.service';\n\n`;
 
     return output;
   }
@@ -49,11 +50,11 @@ export class ResolverGenerator extends FileGenerator {
   private writeGetMethod(): string {
     const { className, variableName } = this;
 
-    let output = `  @Query(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+    let output = `  @Query(() => ${className}Model, {\n    description: 'Get ${className} By Id',\n  })\n  @UseGuards(GqlAuthGuard)\n`;
 
-    output += `  async get${className}Detail(\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n  ): Promise<${className}Model> {\n`;
+    output += `  async get${className}Detail(\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n    @Args({ name: 'include', type: () => ${className}FindInclude }) include: ${className}FindInclude,\n  ): Promise<${className}Model> {\n`;
 
-    output += `    return this.${variableName}Service.get${className}Detail(${variableName}Id);\n  }\n\n`;
+    output += `    return this.${variableName}Service.get${className}Detail(${variableName}Id, include);\n  }\n\n`;
 
     return output;
   }
@@ -61,11 +62,11 @@ export class ResolverGenerator extends FileGenerator {
   private writeListMethod(): string {
     const { className, variableName, uppperCamelPluralizeName } = this;
 
-    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+    let output = `  @Query(() => ${uppperCamelPluralizeName}WithPaging, {\n    description: 'List ${uppperCamelPluralizeName} With Paging',\n  })\n  @UseGuards(GqlAuthGuard)\n`;
 
-    output += `  async get${className}List(\n    @Args({ name: 'where', type: () => ${className}FindFilter, nullable: true }) where: ${className}FindFilter,\n    @Args({ name: 'order', type: () => [${className}FindOrder], nullable: true }) order: ${className}FindOrder[],\n    @Args({ name: 'paging', type: () => PagingQuery, nullable: true }) paging: PagingQuery,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    output += `  async get${className}List(\n    @Args({ name: 'where', type: () => ${className}FindFilter, nullable: true }) where: ${className}FindFilter,\n    @Args({ name: 'order', type: () => [${className}FindOrder], nullable: true }) order: ${className}FindOrder[],\n    @Args({ name: 'paging', type: () => PagingQuery, nullable: true }) paging: PagingQuery,\n    @Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n  ): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
 
-    output += `    return this.${variableName}Service.get${className}List(where, order, paging);\n  }\n\n`;
+    output += `    return this.${variableName}Service.get${className}List(where, order, paging, include);\n  }\n\n`;
 
     return output;
   }
@@ -73,9 +74,9 @@ export class ResolverGenerator extends FileGenerator {
   private writeCreateMethod(): string {
     const { className, variableName } = this;
 
-    let output = `  @Mutation(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+    let output = `  @Mutation(() => ${className}Model, {\n    description: 'Create New ${className} Record',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
 
-    output += `  async createNew${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: 'input', type: () => New${className}Input, nullable: true }) input: New${className}Input,\n  ): Promise<${className}Model> {\n`;
+    output += `  async createNew${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: 'input', type: () => New${className}Input }) input: New${className}Input,\n  ): Promise<${className}Model> {\n`;
 
     output += `    return this.${variableName}Service.createNew${className}(me, input);\n  }\n\n`;
 
@@ -85,7 +86,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeUpdateMethod(): string {
     const { className, variableName } = this;
 
-    let output = `  @Mutation(() => ${className}Model, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+    let output = `  @Mutation(() => ${className}Model, {\n    description: 'Update ${className} Record',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
 
     output += `  async update${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n    @Args({ name: 'input', type: () => Edit${className}Input }) input: Edit${className}Input,\n  ): Promise<${className}Model> {\n`;
 
@@ -97,7 +98,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeDeleteMethod(): string {
     const { className, variableName } = this;
 
-    let output = `  @Mutation(() => Boolean, {\n    description: '',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
+    let output = `  @Mutation(() => Boolean, {\n    description: 'Delete ${className} Record',\n  })\n  @Roles(RoleLimit.ALL)\n  @UseGuards(RoleGuard)\n  @UseGuards(GqlAuthGuard)\n`;
 
     output += `  async delete${className}(\n    @UserDecorator() me: UserModel,\n    @Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n  ): Promise<boolean> {\n`;
 

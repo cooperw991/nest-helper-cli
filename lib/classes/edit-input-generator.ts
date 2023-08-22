@@ -85,7 +85,7 @@ export class EditInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType} | null`;
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: '',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `  @Field(() => ${gqlTypeStr}, {\n    description: 'Params Required For Updating ${this.className} ',\n    nullable: true,\n  })\n  ${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

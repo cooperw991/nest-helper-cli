@@ -17,7 +17,7 @@ export class PagingObjectGenerator extends FileGenerator {
   }
 
   private writeGqlDependencies(): string {
-    return `import { Field, ObjectType } from '@nestjs/graphql';\nimport { PagingInfo } from '@Dto/paging-info.object';\n\n`;
+    return `import { PagingInfo } from '@Dto/paging-info.object';\nimport { Field, ObjectType } from '@nestjs/graphql';\n\n`;
   }
 
   private writeModelDependencies(): string {
@@ -25,7 +25,7 @@ export class PagingObjectGenerator extends FileGenerator {
   }
 
   private writePagingClass(): string {
-    let output = `@ObjectType({\n  description: '',\n})\n`;
+    let output = `@ObjectType({\n  description: '${this.uppperCamelPluralizeName} With Paging',\n})\n`;
     output += `export class ${this.uppperCamelPluralizeName}WithPaging {\n  @Field(() => [${this.className}Model])\n  ${this.camelPluralizeName}: ${this.className}Model[];\n\n  @Field(() => PagingInfo)\n  paging: PagingInfo;\n}\n`;
 
     return output;

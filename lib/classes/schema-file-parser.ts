@@ -79,6 +79,9 @@ export class SchemaFileParser {
     const { _contentLines } = this;
 
     for (let i = 0; i < _contentLines.length; i++) {
+      if (_contentLines[i].indexOf('//') !== -1) {
+        continue;
+      }
       const words = _contentLines[i].split(' ');
       if (words.length < 2) {
         continue;
@@ -95,10 +98,12 @@ export class SchemaFileParser {
 
   private async parseRelations() {
     const { _contentLines, _models } = this;
-    console.log(_models);
 
     let modelName = '';
     for (let i = 0; i < _contentLines.length; i++) {
+      if (_contentLines[i].indexOf('//') !== -1) {
+        continue;
+      }
       const words = R.trim(_contentLines[i].replace(/\s+/g, ' ')).split(' ');
       if (words.length < 2) {
         continue;
@@ -116,7 +121,6 @@ export class SchemaFileParser {
       }
 
       if (R.includes(type, _models) && decorator !== 'model') {
-        console.log(type, '123');
         this._modelRelations[modelName].o.push({
           key: decorator,
           value: type,
@@ -136,6 +140,9 @@ export class SchemaFileParser {
   public async getModelProperties(modelName: string) {
     const lines = this.findModelLines(modelName);
     for (const line of lines) {
+      if (line.indexOf('//') !== -1) {
+        continue;
+      }
       const lineArray = this.parseLineToArray(line);
       if (lineArray.length <= 1) {
         continue;

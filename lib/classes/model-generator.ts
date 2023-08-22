@@ -46,7 +46,6 @@ export class ModelGenerator extends FileGenerator {
 
   private writeModelRelations(): string {
     const { modelRelations, modelName } = this;
-    console.log(modelRelations.Membership.o);
     let output = `import { BaseModel } from '@Model/base.model';\n`;
     const { o, m } = modelRelations[modelName];
 
@@ -56,8 +55,8 @@ export class ModelGenerator extends FileGenerator {
     }
 
     for (const item of m) {
-      const moduleName = inflected.dasherize(item.value);
-      output += `import { ${item.value} } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      const moduleName = inflected.dasherize(inflected.underscore(item.value));
+      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
     }
 
     output += '\n';
@@ -68,7 +67,7 @@ export class ModelGenerator extends FileGenerator {
   private writeModelClass(): string {
     const { modelName, properties } = this;
 
-    let output = `@ObjectType({\n  description: '',\n})\n`;
+    let output = `@ObjectType({\n  description: 'Data Model of ${modelName}',\n})\n`;
     output += `export class ${modelName}Model extends BaseModel {\n`;
 
     for (const property of properties) {
@@ -96,11 +95,10 @@ export class ModelGenerator extends FileGenerator {
       return '';
     }
 
-    const gqlTypeStr = isArray
-      ? `[${gqlType}]`
-      : type === DataType.Relation
-      ? `${gqlType}Model`
-      : gqlType;
+    let gqlTypeStr =
+      type === DataType.Relation ? `${gqlType}Model` : `${gqlType}`;
+
+    gqlTypeStr = isArray ? `[${gqlTypeStr}]` : gqlTypeStr;
     let nullableStr = '';
     let keyNameStr = key;
     let tsTypeStr = tsType;
