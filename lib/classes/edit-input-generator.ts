@@ -46,7 +46,7 @@ export class EditInputGenerator extends FileGenerator {
   private writeEditInputClass(): string {
     const { properties } = this;
 
-    let output = `@InputType({\n${p2}description: '',\n})\n`;
+    let output = `@InputType({\n${p2}description: 'Params Required For Updating ${this.className} ',\n})\n`;
     output += `export class Edit${this.className}Input {\n`;
 
     for (const property of properties) {
@@ -86,7 +86,7 @@ export class EditInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType} | null`;
     }
 
-    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: 'Params Required For Updating ${this.className} ',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
+    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

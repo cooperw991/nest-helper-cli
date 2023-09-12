@@ -117,7 +117,7 @@ export class ServiceGenerator extends FileGenerator {
 
     let output = '';
 
-    output += `${p2}async get${className}List(\n${p4}where: ${className}FindFilter,\n${p4}order: ${className}FindOrder[],\n${p4}paging: PagingQuery,\n${p4}include: ${uppperCamelPluralizeName}FindInclude,\n${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    output += `${p2}async get${className}List(\n${p4}where: ${className}FindFilter,\n${p4}order: ${className}FindOrder[],\n${p4}paging: PagingQuery,\n${p4}include: ${className}FindInclude,\n${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
 
     output += `${p4}const queryOptions: Prisma.${className}FindManyArgs = {};\n${p4}const whereOptions = generateWhereOptions(where);\n${p4}const orderOptions = generateOrderOptions(order);\n\n`;
 
