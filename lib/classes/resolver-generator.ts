@@ -212,20 +212,33 @@ export class ResolverGenerator extends FileGenerator {
     let output = '';
 
     const spNumbers = [];
+    const spNumbersNullable = [];
     for (const property of properties) {
-      const { type, key } = property;
+      const { type, key, nullable } = property;
 
       if (type === DataType.Money || type === DataType.BigInt) {
-        spNumbers.push(key);
+        if (nullable) {
+          spNumbersNullable.push(key);
+        } else {
+          spNumbers.push(key);
+        }
       }
     }
 
     for (const item of spNumbers) {
       output += `${p2}@ResolveField('${item}', () => Number)\n`;
 
-      output += `${p2}async ${item}(@Root() ${variableName}: ${className}Model): Promise<Managers> {\n`;
+      output += `${p2}${item}(@Root() ${variableName}: ${className}Model): number {\n`;
 
       output += `${p4}if (!${variableName}.${item}) {\n${p6}return 0;\n${p4}}\n${p4}return toDollar(${variableName}.${item});\n${p2}}\n\n`;
+    }
+
+    for (const item of spNumbersNullable) {
+      output += `${p2}@ResolveField('${item}', () => Number, { nullable: true })\n`;
+
+      output += `${p2}${item}(@Root() ${variableName}: ${className}Model): number | null {\n`;
+
+      output += `${p4}if (${variableName}.${item} === null || ${variableName}.${item} === undefined) {\n${p6}return null;\n${p4}}\n${p4}return toDollar(${variableName}.${item});\n${p2}}\n\n`;
     }
 
     return R.dropLast(1, output);
