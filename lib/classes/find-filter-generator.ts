@@ -7,6 +7,7 @@ import {
   ModelProperty,
 } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { WriteDependencies } from './helpers/write-dependencies';
 
 export class FindFilterGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -14,33 +15,20 @@ export class FindFilterGenerator extends FileGenerator {
 
     this.suffix = 'input';
     this.models = params.models;
-    this.output += this.writeGqlDependencies();
-    this.output += this.writeEnumDependencies();
     this.output += this.writeFindFilterClass();
+
+    this.output =
+      WriteDependencies.writeEnumDependencies(this.enumRelations) + this.output;
+
+    this.output =
+      WriteDependencies.writeGqlDependencies(
+        this.gqlTypes,
+        this.classValidators,
+      ) + this.output;
   }
 
   public async generateFile(ifReplace: boolean) {
     await this.writeFile('dto/find-filter', ifReplace);
-  }
-
-  private writeGqlDependencies(): string {
-    const { gqlTypes } = this;
-    const gqlTypeStr = [...new Set(gqlTypes)].join(', ');
-    if (gqlTypeStr.length) {
-      return `import { Field, InputType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
-    } else {
-      return `import { Field, InputType } from '@nestjs/graphql';\n\n`;
-    }
-  }
-
-  private writeEnumDependencies(): string {
-    const { enumRelations } = this;
-    if (!enumRelations.length) {
-      return '';
-    }
-
-    const enumStr = enumRelations.join(', ');
-    return `import { ${enumStr} } from '@prisma/client';\n\n`;
   }
 
   private writeFindFilterClass(): string {
@@ -72,11 +60,16 @@ export class FindFilterGenerator extends FileGenerator {
 
     if (type === DataType.DateTime) {
       const gqlTypeStr = gqlType;
-      const tsTypeStr = `${tsType} | null`;
+      const tsTypeStr = `${tsType}`;
 
       const keyNameStr = key;
 
-      const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}_LTE_DATE: ${tsTypeStr};\n\n${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}_GTE_DATE: ${tsTypeStr};\n\n`;
+      let output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}@IsDate()\n${p2}@ValidateIf((_, value) => value)\n${p2}${keyNameStr}_LTE_DATE?: ${tsTypeStr};\n\n`;
+
+      output += `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}@IsDate()\n${p2}@ValidateIf((_, value) => value)\n${p2}${keyNameStr}_GTE_DATE?: ${tsTypeStr};\n\n`;
+
+      this.classValidators.push('IsDate');
+      this.classValidators.push('ValidateIf');
 
       return output;
     }
@@ -86,7 +79,25 @@ export class FindFilterGenerator extends FileGenerator {
 
     const keyNameStr = R.includes(tsType, enumRelations) ? `${key}_EQ` : key;
 
-    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
+    let output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n`;
+
+    if (type === DataType.Money) {
+      output += `${p2}@Max(9999999999999)\n${p2}@Min(-9999999999999)\n${p2}@ValidateIf((_, value) => value)\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+
+      this.classValidators.push('ValidateIf');
+    }
+
+    if (type === DataType.BigInt) {
+      output += `${p2}@Max(999999999999999)\n${p2}@Min(-999999999999999)\n${p2}@IsInt()\n${p2}@ValidateIf((_, value) => value)\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+      this.classValidators.push('IsInt');
+      this.classValidators.push('ValidateIf');
+    }
+
+    output += `${p2}${keyNameStr}?: ${tsTypeStr};\n\n`;
 
     return output;
   }

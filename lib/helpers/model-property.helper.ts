@@ -57,4 +57,9 @@ export const DataTypeMap = {
   Enum: {
     type: DataType.Enum,
   },
+  Money: {
+    type: DataType.Money,
+    gql: 'Float',
+    ts: 'number',
+  },
 };

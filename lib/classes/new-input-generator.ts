@@ -100,7 +100,27 @@ export class NewInputGenerator extends FileGenerator {
       tsTypeStr = `${tsType}`;
     }
 
-    const output = `  @Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
+    let output = `  @Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p2}})\n`;
+
+    if (type === DataType.DateTime) {
+      output += `${p2}@IsDate()\n`;
+      this.classValidators.push('IsDate');
+    }
+
+    if (type === DataType.Money) {
+      output += `${p2}@Max(9999999999999)\n${p2}@Min(-9999999999999)\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+    }
+
+    if (type === DataType.BigInt) {
+      output += `${p2}@Max(999999999999999)\n${p2}@Min(-999999999999999)\n${p2}@IsInt()\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+      this.classValidators.push('IsInt');
+    }
+
+    output += `${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
 
     return output;
   }

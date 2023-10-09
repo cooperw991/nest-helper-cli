@@ -7,6 +7,7 @@ import {
   ModelProperty,
 } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
+import { WriteDependencies } from './helpers/write-dependencies';
 
 export class EditInputGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
@@ -14,33 +15,23 @@ export class EditInputGenerator extends FileGenerator {
 
     this.suffix = 'input';
     this.models = params.models;
-    this.output += this.writeGqlDependencies();
-    this.output += this.writeEnumDependencies();
+
     this.output += this.writeEditInputClass();
+
+    this.output =
+      WriteDependencies.writeEnumDependencies(this.enumRelations) +
+      '\n' +
+      this.output;
+
+    this.output =
+      WriteDependencies.writeGqlDependencies(
+        this.gqlTypes,
+        this.classValidators,
+      ) + this.output;
   }
 
   public async generateFile(ifReplace: boolean) {
     await this.writeFile('dto/edit-' + this.moduleName, ifReplace);
-  }
-
-  private writeGqlDependencies(): string {
-    const { gqlTypes } = this;
-    const gqlTypeStr = [...new Set(gqlTypes)].join(', ');
-    if (gqlTypeStr.length) {
-      return `import { Field, InputType, ${gqlTypeStr} } from '@nestjs/graphql';\n\n`;
-    } else {
-      return `import { Field, InputType } from '@nestjs/graphql';\n\n`;
-    }
-  }
-
-  private writeEnumDependencies(): string {
-    const { enumRelations } = this;
-    if (!enumRelations.length) {
-      return '';
-    }
-
-    const enumStr = enumRelations.join(', ');
-    return `import { ${enumStr} } from '@prisma/client';\n\n`;
   }
 
   private writeEditInputClass(): string {
@@ -81,12 +72,36 @@ export class EditInputGenerator extends FileGenerator {
     let tsTypeStr = tsType;
 
     if (isArray) {
-      tsTypeStr = `${tsType}[] | null`;
+      tsTypeStr = `${tsType}[]`;
     } else {
-      tsTypeStr = `${tsType} | null`;
+      tsTypeStr = `${tsType}`;
     }
 
-    const output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n${p2}${keyNameStr}: ${tsTypeStr};\n\n`;
+    let output = `${p2}@Field(() => ${gqlTypeStr}, {\n${p4}description: '',\n${p4}nullable: true,\n${p2}})\n`;
+
+    if (type === DataType.DateTime) {
+      output += `${p2}@IsDate()\n${p2}@ValidateIf((_, value) => value)\n`;
+      this.classValidators.push('IsDate');
+      this.classValidators.push('ValidateIf');
+    }
+
+    if (type === DataType.Money) {
+      output += `${p2}@Max(9999999999999)\n${p2}@Min(-9999999999999)\n${p2}@ValidateIf((_, value) => value)\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+
+      this.classValidators.push('ValidateIf');
+    }
+
+    if (type === DataType.BigInt) {
+      output += `${p2}@Max(999999999999999)\n${p2}@Min(-999999999999999)\n${p2}@IsInt()\n${p2}@ValidateIf((_, value) => value)\n`;
+      this.classValidators.push('Max');
+      this.classValidators.push('Min');
+      this.classValidators.push('IsInt');
+      this.classValidators.push('ValidateIf');
+    }
+
+    output += `${p2}${keyNameStr}?: ${tsTypeStr};\n\n`;
 
     return output;
   }

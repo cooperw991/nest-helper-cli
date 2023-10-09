@@ -11,6 +11,7 @@ export enum DataType {
   Unsupported,
   Relation,
   Enum,
+  Money,
 }
 
 export interface ModelProperty {

@@ -147,7 +147,11 @@ export class SchemaFileParser {
       if (lineArray.length <= 1) {
         continue;
       }
-      const typeKey = lineArray[1].replace('?', '').replace('[]', '');
+      let typeKey = lineArray[1].replace('?', '').replace('[]', '');
+
+      if (typeKey === 'Decimal' && line.indexOf('@db.Money') !== -1) {
+        typeKey = 'Money';
+      }
 
       let type = DataTypeMap[typeKey];
       if (type === undefined) {

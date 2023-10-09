@@ -31,11 +31,11 @@ export class FindIncludeGenerator extends FileGenerator {
     const { o, m } = modelRelations[modelName];
 
     for (const item of o) {
-      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}: boolean | null;\n\n`;
+      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
     }
 
     for (const item of m) {
-      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}: boolean | null;\n\n`;
+      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
     }
 
     output = R.dropLast(1, output);

@@ -15,6 +15,7 @@ export class BaseHandler {
     this.enums = params.enums;
     this.output = '';
     this.gqlTypes = [];
+    this.classValidators = [];
 
     this.initNames();
     this.findGqlTypes();
@@ -35,6 +36,7 @@ export class BaseHandler {
   protected modelRelations: ModelRelations;
   protected enumRelations: string[];
   protected properties: ModelProperty[];
+  protected classValidators: string[];
 
   private initNames() {
     // 类名称：首字母大写，驼峰
