@@ -40,7 +40,7 @@ export class ResolverGenerator extends FileGenerator {
     output += `import { UseGuards } from '@nestjs/common';\n`;
     output += `import {\n${p2}Args,\n${p2}Context,\n${p2}Int,\n${p2}Mutation,\n${p2}Query,\n${p2}ResolveField,\n${p2}Resolver,\n${p2}Root,\n} from '@nestjs/graphql';\n\n`;
 
-    output += `import { UserDecorator } from '@Decorator/user.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { LogModel } from '@Module/log/models/log.model';\nimport { UserModel } from '@Module/user/models/user.model';\n`;
+    output += `import { Action } from '@Decorator/action.decorator';\nimport { UserDecorator } from '@Decorator/user.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { RoleGuard } from '@Guard/role.guard';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { LogModel } from '@Module/log/models/log.model';\nimport { UserModel } from '@Module/user/models/user.model';\n`;
 
     if (this.ifHasMoney) {
       output += `import { DollarToCentPipe } from '@Pipe/dallor-to-cent.pipe';\nimport { toDollar } from '@Util/money.util';\n\n`;
@@ -66,7 +66,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeGetMethod(): string {
     const { className, variableName } = this;
 
-    let output = `${p2}@Query(() => ${className}Model, {\n${p4}description: 'Get ${className} By Id',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Query(() => ${className}Model, {\n${p4}description: 'Get ${className} By Id',\n${p2}})\n${p2}@Action('${variableName}', 'view')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async get${className}Detail(\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n${p4}@Args({ name: 'include', type: () => ${className}FindInclude }) include: ${className}FindInclude,\n${p2}): Promise<${className}Model> {\n`;
 
@@ -79,7 +79,7 @@ export class ResolverGenerator extends FileGenerator {
     const { className, variableName, uppperCamelPluralizeName, properties } =
       this;
 
-    let output = `${p2}@Query(() => ${uppperCamelPluralizeName}WithPaging, {\n${p4}description: 'List ${uppperCamelPluralizeName} With Paging',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Query(() => ${uppperCamelPluralizeName}WithPaging, {\n${p4}description: 'List ${uppperCamelPluralizeName} With Paging',\n${p2}})\n${p2}@Action('${variableName}', 'list')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async get${className}List(\n`;
 
@@ -109,7 +109,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeListLogsMethod(): string {
     const { className, variableName, uppperCamelPluralizeName } = this;
 
-    let output = `${p2}@Query(() => [LogModel], {\n${p4}description: 'Get ${uppperCamelPluralizeName} Logs',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Query(() => [LogModel], {\n${p4}description: 'Get ${uppperCamelPluralizeName} Logs',\n${p2}})\n${p2}@Action('${variableName}', 'view-log')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async get${className}Logs(\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n${p2}): Promise<LogModel[]> {\n`;
 
@@ -121,7 +121,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeCreateMethod(): string {
     const { className, variableName, properties } = this;
 
-    let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Create New ${className} Record',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Create New ${className} Record',\n${p2}})\n${p2}@Action('${variableName}', 'create')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async createNew${className}(\n${p4}@UserDecorator() me: UserModel,\n`;
 
@@ -154,7 +154,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeUpdateMethod(): string {
     const { className, variableName, properties } = this;
 
-    let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Update ${className} Record',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Update ${className} Record',\n${p2}})\n${p2}@Action('${variableName}', 'update')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async update${className}(\n${p4}@UserDecorator() me: UserModel,\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n`;
 
@@ -185,7 +185,7 @@ export class ResolverGenerator extends FileGenerator {
   private writeDeleteMethod(): string {
     const { className, variableName } = this;
 
-    let output = `${p2}@Mutation(() => Boolean, {\n${p4}description: 'Delete ${className} Record',\n${p2}})\n${p2}@UseGuards(GqlAuthGuard)\n`;
+    let output = `${p2}@Mutation(() => Boolean, {\n${p4}description: 'Delete ${className} Record',\n${p2}})\n${p2}@Action('${variableName}', 'delete')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
     output += `${p2}async delete${className}(\n${p4}@UserDecorator() me: UserModel,\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n${p2}): Promise<boolean> {\n`;
 
