@@ -28,13 +28,21 @@ export class FindIncludeGenerator extends FileGenerator {
     let output = `@InputType({\n${p2}description: '${className} Relations Querying',\n})\n`;
     output += `export class ${this.className}FindInclude {\n`;
 
-    const { o, m } = modelRelations[modelName];
+    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-    for (const item of o) {
+    for (const item of o2o) {
       output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
     }
 
-    for (const item of m) {
+    for (const item of o2m) {
+      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
+    }
+
+    for (const item of m2o) {
+      output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
+    }
+
+    for (const item of m2m) {
       output += `${p2}@Field(() => Boolean, { nullable: true })\n${p2}${item.key}?: boolean;\n\n`;
     }
 

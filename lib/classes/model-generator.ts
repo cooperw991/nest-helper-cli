@@ -48,14 +48,24 @@ export class ModelGenerator extends FileGenerator {
   private writeModelRelations(): string {
     const { modelRelations, modelName } = this;
     let output = `import { BaseModel } from '@Model/base.model';\n`;
-    const { o, m } = modelRelations[modelName];
+    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-    for (const item of o) {
+    for (const item of o2o) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
       output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
     }
 
-    for (const item of m) {
+    for (const item of o2m) {
+      const moduleName = inflected.dasherize(inflected.underscore(item.value));
+      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+    }
+
+    for (const item of m2o) {
+      const moduleName = inflected.dasherize(inflected.underscore(item.value));
+      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+    }
+
+    for (const item of m2m) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
       output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
     }

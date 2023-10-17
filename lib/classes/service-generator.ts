@@ -2,7 +2,18 @@ import * as R from 'ramda';
 import { FileGenerator } from './file-generator';
 import { DataType } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
-import { p2, p4, p6, p8, p10, p12 } from '../utils/pad.util';
+import {
+  p2,
+  p4,
+  p6,
+  p8,
+  p10,
+  p12,
+  p14,
+  p16,
+  p18,
+  p20,
+} from '../utils/pad.util';
 import { arrayToString } from '../utils/array.util';
 
 export class ServiceGenerator extends FileGenerator {
@@ -93,14 +104,32 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `${p4}const ${variableName} = await this.prisma.${variableName}.findFirst({\n${p6}where: {\n${p8}id: ${variableName}Id,\n${p8}deletedAt: null,\n${p6}},\n${p6}include: include\n${p8}? {\n`;
 
-    const { o, m } = modelRelations[modelName];
+    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-    for (const item of o) {
-      output += `${p12}${item.key}: true,\n`;
+    for (const item of o2o) {
+      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
     }
 
-    for (const item of m) {
-      output += `${p12}${item.key}: true,\n`;
+    for (const item of o2m) {
+      if (item.deepKey) {
+        output += `${p12}${item.key}: include.${item.key}\n${p14}? {\n${p18}include: {\n`;
+
+        output += item.deepKey.reduce((prev, curr) => {
+          return prev + `${p20}${curr}: true,\n`;
+        }, '');
+
+        output += `${p18}},\n${p18}where: {\n${p20}deletedAt: null,\n${p18}},\n${p16}}\n${p14}: false,\n`;
+      } else {
+        output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+      }
+    }
+
+    for (const item of m2o) {
+      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+    }
+
+    for (const item of m2m) {
+      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
     }
 
     output += `${p10}}\n${p8}: null,\n${p4}});\n\n`;
@@ -156,13 +185,29 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `${p4}const { skip, take } = prismaPaging(paging);\n${p4}queryOptions.skip = skip;\n${p4}queryOptions.take = take;\n${p4}queryOptions.include = include\n${p6}? {\n`;
 
-    const { o, m } = modelRelations[modelName];
+    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-    for (const item of o) {
+    for (const item of o2o) {
       output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
     }
 
-    for (const item of m) {
+    for (const item of o2m) {
+      if (item.deepKey?.length) {
+        output += `${p10}${item.key}: include.${item.key}\n${p12}? {\n${p16}include: {\n`;
+        output += item.deepKey.reduce((prev, curr) => {
+          return prev + `${p18}${curr}: true,\n`;
+        }, '');
+        output += `${p16}},\n${p16}where: {\n${p18}deletedAt: null,\n${p16}},\n${p14}}\n${p12}: false,\n`;
+      } else {
+        output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
+      }
+    }
+
+    for (const item of m2o) {
+      output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
+    }
+
+    for (const item of m2m) {
       output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
     }
 

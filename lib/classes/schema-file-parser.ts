@@ -1,7 +1,10 @@
 import * as fs from 'fs';
 import R from 'ramda';
 
-import { ModelRelations } from '../interfaces/relation.interface';
+import {
+  ModelRelation,
+  ModelRelations,
+} from '../interfaces/relation.interface';
 import {
   ModelProperty,
   DataType,
@@ -100,6 +103,11 @@ export class SchemaFileParser {
     const { _contentLines, _models } = this;
 
     let modelName = '';
+    const tempRelations: {
+      [key: string]: { o: ModelRelation[]; m: ModelRelation[] };
+    } = {};
+    const relations: ModelRelations = {};
+
     for (let i = 0; i < _contentLines.length; i++) {
       if (_contentLines[i].indexOf('//') !== -1) {
         continue;
@@ -114,14 +122,14 @@ export class SchemaFileParser {
 
       if (decorator === 'model') {
         modelName = type;
-        this._modelRelations[modelName] = {
+        tempRelations[modelName] = {
           o: [],
           m: [],
         };
       }
 
       if (R.includes(type, _models) && decorator !== 'model') {
-        this._modelRelations[modelName].o.push({
+        tempRelations[modelName].o.push({
           key: decorator,
           value: type,
         });
@@ -129,12 +137,71 @@ export class SchemaFileParser {
         R.includes(type.split('[]')[0], _models) &&
         decorator !== 'model'
       ) {
-        this._modelRelations[modelName].m.push({
+        tempRelations[modelName].m.push({
           key: decorator,
           value: type.split('[]')[0],
         });
       }
     }
+
+    for (const modelName of R.keys(tempRelations)) {
+      const { o, m } = tempRelations[modelName];
+
+      const o2o: ModelRelation[] = [];
+      const o2m: ModelRelation[] = [];
+      const m2o: ModelRelation[] = [];
+      const m2m: ModelRelation[] = [];
+
+      for (const relation of o) {
+        const { value } = relation;
+        const found2o = tempRelations[value].o.find(
+          (rel) => rel.value === modelName,
+        );
+        if (found2o) {
+          o2o.push(relation);
+        } else {
+          m2o.push(relation);
+        }
+      }
+
+      for (const relation of m) {
+        const { value } = relation;
+        const found2o = tempRelations[value].o.find(
+          (rel) => rel.value === modelName,
+        );
+        if (found2o) {
+          o2m.push(relation);
+        } else {
+          m2m.push(relation);
+        }
+      }
+
+      relations[modelName] = {
+        o2o,
+        o2m,
+        m2o,
+        m2m,
+      };
+    }
+
+    for (const modelName of R.keys(relations)) {
+      const { m2o } = relations[modelName];
+
+      for (const item of m2o) {
+        const foundO2mIdx = relations[item.value].o2m.findIndex((rel) => {
+          return rel.value === modelName;
+        });
+        if (foundO2mIdx === -1) {
+          continue;
+        }
+        relations[item.value].o2m[foundO2mIdx].deepKey = R.without(
+          [item],
+          m2o,
+        ).map((rel) => rel.key);
+      }
+    }
+
+    this._modelRelations = relations;
   }
 
   public async getModelProperties(modelName: string) {
