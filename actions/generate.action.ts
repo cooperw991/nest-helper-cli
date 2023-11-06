@@ -33,6 +33,7 @@ export class GenerateAction extends AbstractAction {
     console.log(parser.modelRelations.Contact.o2m);
 
     const ifReplace = !!options.find((opt) => opt.name === 'replace');
+    console.log(123);
 
     if (schematic.value === 'module' || schematic.value === 'mo') {
       await this.generateModuleFiles(parser, modelName, ifReplace);
