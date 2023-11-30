@@ -31,6 +31,7 @@ export class GenerateAction extends AbstractAction {
     const parser = await this.generateParser(modelName);
 
     const ifReplace = !!options.find((opt) => opt.name === 'replace');
+    console.log(123);
 
     if (schematic.value === 'module' || schematic.value === 'mo') {
       await this.generateModuleFiles(parser, modelName, ifReplace);
