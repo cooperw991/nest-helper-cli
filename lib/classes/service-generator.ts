@@ -253,7 +253,7 @@ export class ServiceGenerator extends FileGenerator {
 
     output += creationOutput;
 
-    output += `${p10}creatorId: me.id,\n${p10}modifierId: me.id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.CREATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'createNew${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
+    output += `${p10}creatorId: me.id,\n${p10}modifierId: me.id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.CREATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'createNew${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
 
     if (this.ifLog) {
       output += `${p4}await this.logService.createLog({\n${p6}userId: me.id,\n${p6}moduleId: new${className}.id,\n${p6}moduleName: ${className}Service.moduleName,\n${p6}action: 'create',\n${p6}additionalInfo: JSON.stringify(input),\n${p4}});\n\n`;
@@ -299,7 +299,7 @@ export class ServiceGenerator extends FileGenerator {
 
     output += updatingOutput;
 
-    output += `${p10}modifierId: me.id,\n${p8}},\n${p8}where: {\n${p10}id: ${variableName}Id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('generate.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.UPDATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'update${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
+    output += `${p10}modifierId: me.id,\n${p8}},\n${p8}where: {\n${p10}id: ${variableName}Id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.UPDATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'update${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
 
     if (this.ifLog) {
       output += `${p4}const changes = {};\n`;

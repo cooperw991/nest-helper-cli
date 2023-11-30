@@ -30,8 +30,6 @@ export class GenerateAction extends AbstractAction {
 
     const parser = await this.generateParser(modelName);
 
-    console.log(parser.modelRelations.Contact.o2m);
-
     const ifReplace = !!options.find((opt) => opt.name === 'replace');
 
     if (schematic.value === 'module' || schematic.value === 'mo') {

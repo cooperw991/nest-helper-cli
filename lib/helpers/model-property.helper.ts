@@ -39,7 +39,7 @@ export const DataTypeMap = {
   Json: {
     type: DataType.Json,
     gql: 'String',
-    ts: 'Record<string, unkonwn>',
+    ts: 'Record<string, unknown>',
   },
   Bytes: {
     type: DataType.Bytes,
