@@ -18,11 +18,11 @@ export class PagingObjectGenerator extends FileGenerator {
   }
 
   private writeGqlDependencies(): string {
-    return `import { PagingInfo } from '@Dto/paging-info.object';\nimport { Field, ObjectType } from '@nestjs/graphql';\n\n`;
+    return `import { Field, ObjectType } from '@nestjs/graphql';\n\nimport { PagingInfo } from '../../../common/dto/paging-info.object';\n`;
   }
 
   private writeModelDependencies(): string {
-    return `import { ${this.className}Model } from '@Module/${this.moduleName}/models/${this.moduleName}.model';\n\n`;
+    return `import { ${this.className}Model } from '../models/${this.moduleName}.model';\n\n`;
   }
 
   private writePagingClass(): string {

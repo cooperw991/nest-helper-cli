@@ -40,13 +40,13 @@ export class ResolverGenerator extends FileGenerator {
     output += `import { UseGuards } from '@nestjs/common';\n`;
     output += `import {\n${p2}Args,\n${p2}Context,\n${p2}Int,\n${p2}Mutation,\n${p2}Query,\n${p2}ResolveField,\n${p2}Resolver,\n${p2}Root,\n} from '@nestjs/graphql';\n\n`;
 
-    output += `import { Action } from '@Decorator/action.decorator';\nimport { UserDecorator } from '@Decorator/user.decorator';\nimport { Managers } from '@Dto/managers.object';\nimport { PagingQuery } from '@Dto/paging-query.input';\nimport { GqlAuthGuard } from '@Guard/auth.guard';\nimport { RoleGuard } from '@Guard/role.guard';\nimport { AppGraphqlContext } from '@Interface/app-graphql-context.interface';\nimport { LogModel } from '@Module/log/models/log.model';\nimport { UserModel } from '@Module/user/models/user.model';\n`;
+    output += `import { Action } from '../../../common/decorators/action.decorator';\nimport { UserDecorator } from '../../../common/decorators/user.decorator';\nimport { Managers } from '../../../common/dto/managers.object';\nimport { PagingQuery } from '../../../common/dto/paging-query.input';\nimport { GqlAuthGuard } from '../../../common/guards/auth.guard';\nimport { RoleGuard } from '../../../common/guards/role.guard';\nimport { AppGraphqlContext } from '../../../common/interfaces/app-graphql-context.interface';\n`;
 
     if (this.ifHasMoney) {
-      output += `import { DollarToCentPipe } from '@Pipe/dallor-to-cent.pipe';\nimport { toDollar } from '@Util/money.util';\n\n`;
-    } else {
-      output += `\n`;
+      output += `import { DollarToCentPipe } from '../../../common/pipes/dallor-to-cent.pipe';\nimport { toDollar } from '../../../common/utils/money.util';\n\n`;
     }
+
+    output += `import { LogModel } from '../../log/models/log.model';\nimport { UserModel } from '../../user/models/user.model';\n`;
 
     output += `import { Edit${className}Input } from '../dto/edit-${moduleName}.input';\nimport { ${className}FindFilter } from '../dto/find-filter.input';\nimport { ${className}FindInclude } from '../dto/find-include.input';\nimport { ${className}FindOrder } from '../dto/find-order.input';\nimport { New${className}Input } from '../dto/new-${moduleName}.input';\nimport { ${uppperCamelPluralizeName}WithPaging } from '../dto/paging.object';\nimport { ${className}Model } from '../models/${moduleName}.model';\nimport { ${className}Service } from '../services/${moduleName}.service';\n\n`;
 
@@ -64,11 +64,18 @@ export class ResolverGenerator extends FileGenerator {
   }
 
   private writeGetMethod(): string {
-    const { className, variableName } = this;
+    const { className, variableName, modelName } = this;
+
+    const relationCount = this.calRelationCount(modelName);
 
     let output = `${p2}@Query(() => ${className}Model, {\n${p4}description: 'Get ${className} By Id',\n${p2}})\n${p2}@Action('${variableName}', 'view')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
-    output += `${p2}async get${className}Detail(\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n${p4}@Args({ name: 'include', type: () => ${className}FindInclude }) include: ${className}FindInclude,\n${p2}): Promise<${className}Model> {\n`;
+    output += `${p2}async get${className}Detail(\n${p4}@Args({ name: '${variableName}Id', type: () => Int }) ${variableName}Id: number,\n`;
+
+    if (relationCount) {
+      output += `${p4}@Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n`;
+    }
+    output += `${p2}): Promise<${className}Model> {\n`;
 
     output += `${p4}return this.${variableName}Service.get${className}Detail(${variableName}Id, include);\n${p2}}\n\n`;
 
@@ -76,8 +83,15 @@ export class ResolverGenerator extends FileGenerator {
   }
 
   private writeListMethod(): string {
-    const { className, variableName, uppperCamelPluralizeName, properties } =
-      this;
+    const {
+      className,
+      variableName,
+      uppperCamelPluralizeName,
+      properties,
+      modelName,
+    } = this;
+
+    const relationCount = this.calRelationCount(modelName);
 
     let output = `${p2}@Query(() => ${uppperCamelPluralizeName}WithPaging, {\n${p4}description: 'List ${uppperCamelPluralizeName} With Paging',\n${p2}})\n${p2}@Action('${variableName}', 'list')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
@@ -99,7 +113,11 @@ export class ResolverGenerator extends FileGenerator {
       output += `${p4}@Args({ name: 'where', type: () => ${className}FindFilter, nullable: true }) where: ${className}FindFilter,\n`;
     }
 
-    output += `${p4}@Args({ name: 'order', type: () => [${className}FindOrder], nullable: true }) order: ${className}FindOrder[],\n${p4}@Args({ name: 'paging', type: () => PagingQuery, nullable: true }) paging: PagingQuery,\n${p4}@Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    output += `${p4}@Args({ name: 'order', type: () => [${className}FindOrder], nullable: true }) order: ${className}FindOrder[],\n${p4}@Args({ name: 'paging', type: () => PagingQuery, nullable: true }) paging: PagingQuery,\n`;
+    if (relationCount) {
+      output += `${p4}@Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n`;
+    }
+    output += `${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
 
     output += `${p4}return this.${variableName}Service.get${className}List(where, order, paging, include);\n${p2}}\n\n`;
 
@@ -119,7 +137,9 @@ export class ResolverGenerator extends FileGenerator {
   }
 
   private writeCreateMethod(): string {
-    const { className, variableName, properties } = this;
+    const { className, variableName, properties, modelName } = this;
+
+    const relationCount = this.calRelationCount(modelName);
 
     let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Create New ${className} Record',\n${p2}})\n${p2}@Action('${variableName}', 'create')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
@@ -146,13 +166,19 @@ export class ResolverGenerator extends FileGenerator {
       output += `${p4}@Args({ name: 'input', type: () => New${className}Input }) input: New${className}Input,\n`;
     }
 
-    output += `${p2}): Promise<${className}Model> {\n${p4}return this.${variableName}Service.createNew${className}(me, input);\n${p2}}\n\n`;
+    if (relationCount) {
+      output += `${p4}@Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n`;
+    }
+
+    output += `${p2}): Promise<${className}Model> {\n${p4}return this.${variableName}Service.createNew${className}(me, input, include);\n${p2}}\n\n`;
 
     return output;
   }
 
   private writeUpdateMethod(): string {
-    const { className, variableName, properties } = this;
+    const { className, variableName, properties, modelName } = this;
+
+    const relationCount = this.calRelationCount(modelName);
 
     let output = `${p2}@Mutation(() => ${className}Model, {\n${p4}description: 'Update ${className} Record',\n${p2}})\n${p2}@Action('${variableName}', 'update')\n${p2}@UseGuards(RoleGuard)\n${p2}@UseGuards(GqlAuthGuard)\n`;
 
@@ -175,9 +201,13 @@ export class ResolverGenerator extends FileGenerator {
       output += `${p4}@Args({ name: 'input', type: () => Edit${className}Input }) input: Edit${className}Input,\n`;
     }
 
+    if (relationCount) {
+      output += `${p4}@Args({ name: 'include', type: () => ${className}FindInclude, nullable: true }) include: ${className}FindInclude,\n`;
+    }
+
     output += `${p2}): Promise<${className}Model> {\n`;
 
-    output += `${p4}return this.${variableName}Service.update${className}(me, ${variableName}Id, input);\n${p2}}\n\n`;
+    output += `${p4}return this.${variableName}Service.update${className}(me, ${variableName}Id, input, include);\n${p2}}\n\n`;
 
     return output;
   }
@@ -242,5 +272,11 @@ export class ResolverGenerator extends FileGenerator {
     }
 
     return R.dropLast(1, output);
+  }
+
+  private calRelationCount(modelName: string): number {
+    const { o2o, o2m, m2o, m2m } = this.modelRelations[modelName];
+
+    return o2o.length + o2m.length + m2o.length + m2m.length;
   }
 }

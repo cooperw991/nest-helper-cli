@@ -13,6 +13,7 @@ export class ModelGenerator extends FileGenerator {
   constructor(params: GeneratorParams) {
     super(params);
 
+    this.needPrisma = false;
     this.suffix = 'model';
     this.models = params.models;
     this.output += this.writeGqlDependencies();
@@ -20,6 +21,8 @@ export class ModelGenerator extends FileGenerator {
     this.output += this.writeModelRelations();
     this.output += this.writeModelClass();
   }
+
+  private needPrisma: boolean;
 
   public async generateFile(ifReplace: boolean) {
     await this.writeFile('models/' + this.moduleName, ifReplace);
@@ -36,38 +39,50 @@ export class ModelGenerator extends FileGenerator {
   }
 
   private writeEnumDependencies(): string {
-    const { enumRelations } = this;
-    if (!enumRelations.length) {
+    const { enumRelations, properties } = this;
+    const needPrisma = properties.find((property) => {
+      return (
+        property.type === DataType.Json ||
+        property.type === DataType.Decimal ||
+        property.type === DataType.Money
+      );
+    });
+    if (!enumRelations.length && !needPrisma) {
       return '';
     }
 
+    if (needPrisma) {
+      enumRelations.push('Prisma');
+    }
+
     const enumStr = enumRelations.join(', ');
+
     return `import { ${enumStr} } from '@prisma/client';\n\n`;
   }
 
   private writeModelRelations(): string {
     const { modelRelations, modelName } = this;
-    let output = `import { BaseModel } from '@Model/base.model';\n`;
+    let output = `import { BaseModel } from '../../../models/base.model';\n`;
     const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
     for (const item of o2o) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
-      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item.value}Model } from '../../${moduleName}/models/${moduleName}.model';\n`;
     }
 
     for (const item of o2m) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
-      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item.value}Model } from '../../${moduleName}/models/${moduleName}.model';\n`;
     }
 
     for (const item of m2o) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
-      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item.value}Model } from '../../${moduleName}/models/${moduleName}.model';\n`;
     }
 
     for (const item of m2m) {
       const moduleName = inflected.dasherize(inflected.underscore(item.value));
-      output += `import { ${item.value}Model } from '@Module/${moduleName}/models/${moduleName}.model';\n`;
+      output += `import { ${item.value}Model } from '../../${moduleName}/models/${moduleName}.model';\n`;
     }
 
     output += '\n';

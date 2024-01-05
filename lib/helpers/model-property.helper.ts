@@ -34,12 +34,12 @@ export const DataTypeMap = {
   Decimal: {
     type: DataType.Decimal,
     gql: 'Float',
-    ts: 'number',
+    ts: 'Prisma.Decimal',
   },
   Json: {
     type: DataType.Json,
     gql: 'String',
-    ts: 'Record<string, unknown>',
+    ts: 'Prisma.JsonValue',
   },
   Bytes: {
     type: DataType.Bytes,
@@ -60,6 +60,6 @@ export const DataTypeMap = {
   Money: {
     type: DataType.Money,
     gql: 'Float',
-    ts: 'number',
+    ts: 'Prisma.Decimal',
   },
 };

@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import { FileGenerator } from './file-generator';
 import { DataType } from '../interfaces/model-property.interface';
 import { GeneratorParams } from '../interfaces/generator-param.interface';
@@ -13,6 +12,7 @@ import {
   p16,
   p18,
   p20,
+  p22,
 } from '../utils/pad.util';
 import { arrayToString } from '../utils/array.util';
 
@@ -59,18 +59,18 @@ export class ServiceGenerator extends FileGenerator {
     );
     output += `import { ${nestCommonDependencies} } from '@nestjs/common';\n`;
     output += `import { Prisma } from '@prisma/client';\n`;
-    output += `import dayjs from 'dayjs';\n`;
     output += `import { I18nContext, I18nService } from 'nestjs-i18n';\n`;
     output += `import { PrismaService } from 'nestjs-prisma';\n`;
     output += `import R from 'ramda';\n\n`;
 
-    output += `import { PagingQuery } from '@Dto/paging-query.input';\n`;
-    output += `import { LogModel } from '@Module/log/models/log.model';\n`;
-    output += `import { LogService } from '@Module/log/services/log.service';\n`;
-    output += `import { UserModel } from '@Module/user/models/user.model';\n`;
-    output += `import { generateOrderOptions, generateWhereOptions } from '@Util/query.util';\n`;
-    output += `import { pagingResponse, prismaPaging } from '@Util/pagination.util';\n`;
-    output += `import { psmErrorMsg } from '@Util/prisma-error-code.util';\n\n`;
+    output += `import { PagingQuery } from '../../../common/dto/paging-query.input';\n`;
+    output += `import dayjs from '../../../common/utils/dayjs.util';\n`;
+    output += `import { pagingResponse, prismaPaging } from '../../../common/utils/pagination.util';\n`;
+    output += `import { psmErrorMsg } from '../../../common/utils/prisma-error-code.util';\n`;
+    output += `import { generateOrderOptions, generateWhereOptions } from '../../../common/utils/query.util';\n`;
+    output += `import { LogModel } from '../../log/models/log.model';\n`;
+    output += `import { LogService } from '../../log/services/log.service';\n`;
+    output += `import { UserModel } from '../../user/models/user.model';\n\n`;
     output += `import { Edit${className}Input } from '../dto/edit-${moduleName}.input';\n`;
     output += `import { ${className}FindFilter } from '../dto/find-filter.input';\n`;
     output += `import { ${className}FindInclude } from '../dto/find-include.input';\n`;
@@ -98,41 +98,53 @@ export class ServiceGenerator extends FileGenerator {
     const { className, variableName, modelRelations, modelName, properties } =
       this;
 
+    const relationCount = this.calRelationCount(modelName);
+
     let output = '';
 
-    output += `${p2}async get${className}Detail(\n${p4}${variableName}Id: number,\n${p4}include?: ${className}FindInclude,\n${p2}): Promise<${className}Model> {\n`;
-
-    output += `${p4}const ${variableName} = await this.prisma.${variableName}.findFirst({\n${p6}where: {\n${p8}id: ${variableName}Id,\n${p8}deletedAt: null,\n${p6}},\n${p6}include: include\n${p8}? {\n`;
-
-    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
-
-    for (const item of o2o) {
-      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+    output += `${p2}async get${className}Detail(\n${p4}${variableName}Id: number,\n`;
+    if (relationCount) {
+      output += `${p4}include?: ${className}FindInclude,\n`;
     }
+    output += `${p2}): Promise<${className}Model> {\n`;
 
-    for (const item of o2m) {
-      if (item.deepKey) {
-        output += `${p12}${item.key}: include.${item.key}\n${p14}? {\n${p18}include: {\n`;
+    output += `${p4}const ${variableName} = await this.prisma.${variableName}.findFirst({\n${p6}where: {\n${p8}id: ${variableName}Id,\n${p8}deletedAt: null,\n${p6}},\n`;
 
-        output += item.deepKey.reduce((prev, curr) => {
-          return prev + `${p20}${curr}: true,\n`;
-        }, '');
+    if (relationCount) {
+      const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-        output += `${p18}},\n${p18}where: {\n${p20}deletedAt: null,\n${p18}},\n${p16}}\n${p14}: false,\n`;
-      } else {
+      output += `${p6}include: include\n${p8}? {\n`;
+
+      for (const item of o2o) {
         output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
       }
+
+      for (const item of o2m) {
+        if (item.deepKey) {
+          output += `${p12}${item.key}: include.${item.key}\n${p14}? {\n${p18}include: {\n`;
+
+          output += item.deepKey.reduce((prev, curr) => {
+            return prev + `${p20}${curr}: true,\n`;
+          }, '');
+
+          output += `${p18}},\n${p18}where: {\n${p20}deletedAt: null,\n${p18}},\n${p16}}\n${p14}: false,\n`;
+        } else {
+          output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+        }
+      }
+
+      for (const item of m2o) {
+        output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of m2m) {
+        output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      output += `${p10}}\n${p8}: null,\n`;
     }
 
-    for (const item of m2o) {
-      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
-    }
-
-    for (const item of m2m) {
-      output += `${p12}${item.key}: include.${item.key} ?? false,\n`;
-    }
-
-    output += `${p10}}\n${p8}: null,\n${p4}});\n\n`;
+    output += `${p4}});\n\n`;
 
     output += `${p4}if (!${variableName}) {\n${p6}throw new GoneException(\n${p8}await this.i18n.t('general.NOT_FOUND', {\n${p10}args: {\n${p12}model: ${className}Service.moduleName,\n${p12}condition: 'id',\n${p12}value: ${variableName}Id,\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
 
@@ -173,9 +185,15 @@ export class ServiceGenerator extends FileGenerator {
       properties,
     } = this;
 
+    const relationCount = this.calRelationCount(modelName);
+
     let output = '';
 
-    output += `${p2}async get${className}List(\n${p4}where: ${className}FindFilter,\n${p4}order: ${className}FindOrder[],\n${p4}paging: PagingQuery,\n${p4}include: ${className}FindInclude,\n${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
+    output += `${p2}async get${className}List(\n${p4}where: ${className}FindFilter,\n${p4}order: ${className}FindOrder[],\n${p4}paging: PagingQuery,\n`;
+    if (relationCount) {
+      output += `${p4}include: ${className}FindInclude,\n`;
+    }
+    output += `${p2}): Promise<${uppperCamelPluralizeName}WithPaging> {\n`;
 
     output += `${p4}const queryOptions: Prisma.${className}FindManyArgs = {};\n${p4}const whereOptions = generateWhereOptions(where);\n${p4}const orderOptions = generateOrderOptions(order);\n\n`;
 
@@ -183,35 +201,41 @@ export class ServiceGenerator extends FileGenerator {
 
     output += `${p4}queryOptions.orderBy = orderOptions.length\n${p6}? orderOptions\n${p6}: [{ id: 'desc' }];\n\n`;
 
-    output += `${p4}const { skip, take } = prismaPaging(paging);\n${p4}queryOptions.skip = skip;\n${p4}queryOptions.take = take;\n${p4}queryOptions.include = include\n${p6}? {\n`;
+    output += `${p4}const { skip, take } = prismaPaging(paging);\n${p4}queryOptions.skip = skip;\n${p4}queryOptions.take = take;\n`;
 
-    const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
+    if (relationCount) {
+      output += `${p4}queryOptions.include = include\n${p6}? {\n`;
 
-    for (const item of o2o) {
-      output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
-    }
+      const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
 
-    for (const item of o2m) {
-      if (item.deepKey?.length) {
-        output += `${p10}${item.key}: include.${item.key}\n${p12}? {\n${p16}include: {\n`;
-        output += item.deepKey.reduce((prev, curr) => {
-          return prev + `${p18}${curr}: true,\n`;
-        }, '');
-        output += `${p16}},\n${p16}where: {\n${p18}deletedAt: null,\n${p16}},\n${p14}}\n${p12}: false,\n`;
-      } else {
+      for (const item of o2o) {
         output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
       }
+
+      for (const item of o2m) {
+        if (item.deepKey?.length) {
+          output += `${p10}${item.key}: include.${item.key}\n${p12}? {\n${p16}include: {\n`;
+          output += item.deepKey.reduce((prev, curr) => {
+            return prev + `${p18}${curr}: true,\n`;
+          }, '');
+          output += `${p16}},\n${p16}where: {\n${p18}deletedAt: null,\n${p16}},\n${p14}}\n${p12}: false,\n`;
+        } else {
+          output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
+        }
+      }
+
+      for (const item of m2o) {
+        output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of m2m) {
+        output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      output += `${p8}}\n${p6}: null;\n`;
     }
 
-    for (const item of m2o) {
-      output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
-    }
-
-    for (const item of m2m) {
-      output += `${p10}${item.key}: include.${item.key} ?? false,\n`;
-    }
-
-    output += `${p8}}\n${p6}: null;\n\n`;
+    output += `\n`;
 
     output += `${p4}const ${camelPluralizeName} = await this.prisma.${variableName}.findMany(queryOptions);\n${p4}const totalCount = await this.prisma.${variableName}.count({\n${p6}where: whereOptions,\n${p4}});\n\n`;
 
@@ -242,18 +266,68 @@ export class ServiceGenerator extends FileGenerator {
   }
 
   private writeCreateMethod(): string {
-    const { className, variableName, properties } = this;
-    let output = `${p2}async createNew${className}(\n${p4}me: UserModel,\n${p4}input: New${className}Input,\n${p2}): Promise<${className}Model> {\n`;
+    const { className, variableName, properties, modelRelations, modelName } =
+      this;
+
+    const relationCount = this.calRelationCount(modelName);
+
+    let output = `${p2}async createNew${className}(\n${p4}me: UserModel,\n${p4}input: New${className}Input,\n`;
+
+    if (relationCount) {
+      output += `${p4}include: ${className}FindInclude,\n`;
+    }
+
+    output += `${p2}): Promise<${className}Model> {\n`;
 
     output += `${p4}let new${className};\n\n`;
 
-    const creationOutput = '          ...input,\n';
+    const creationOutput = `${p10}...input,\n`;
 
     output += `${p4}try {\n${p6}new${className} = await this.prisma.${variableName}.create({\n${p8}data: {\n`;
 
     output += creationOutput;
 
-    output += `${p10}creatorId: me.id,\n${p10}modifierId: me.id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.CREATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'createNew${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
+    output += `${p10}creatorId: me.id,\n${p10}modifierId: me.id,\n${p8}},\n`;
+
+    if (relationCount) {
+      output += `${p8}include: include\n${p10}? {\n`;
+
+      const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
+
+      for (const item of o2o) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of o2m) {
+        if (item.deepKey) {
+          output += `${p14}${item.key}: include.${item.key}\n${p16}? {\n${p20}include: {\n`;
+
+          output += item.deepKey.reduce((prev, curr) => {
+            return prev + `${p22}${curr}: true,\n`;
+          }, '');
+
+          output += `${p20}},\n${p20}where: {\n${p22}deletedAt: null,\n${p20}},\n${p18}}\n${p14}: false,\n`;
+        } else {
+          output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+        }
+      }
+
+      for (const item of m2o) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of m2m) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+      output += `${p12}}\n${p10}: null,\n
+      
+    const relationCount = this.calRelationCount(modelName);
+    `;
+    }
+
+    output += `${p6}});\n`;
+
+    output += `${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.CREATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'createNew${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
 
     if (this.ifLog) {
       output += `${p4}await this.logService.createLog({\n${p6}userId: me.id,\n${p6}moduleId: new${className}.id,\n${p6}moduleName: ${className}Service.moduleName,\n${p6}action: 'create',\n${p6}additionalInfo: JSON.stringify(input),\n${p4}});\n\n`;
@@ -286,20 +360,67 @@ export class ServiceGenerator extends FileGenerator {
   }
 
   private writeUpdateMethod(): string {
-    const { className, variableName, properties } = this;
-    let output = `${p2}async update${className}(\n${p4}me: UserModel,\n${p4}${variableName}Id: number,\n${p4}input: Edit${className}Input,\n${p2}): Promise<${className}Model> {\n`;
+    const { className, variableName, properties, modelRelations, modelName } =
+      this;
+
+    const relationCount = this.calRelationCount(modelName);
+
+    let output = `${p2}async update${className}(\n${p4}me: UserModel,\n${p4}${variableName}Id: number,\n${p4}input: Edit${className}Input,\n`;
+
+    if (relationCount) {
+      output += `${p4}include: ${className}FindInclude,\n`;
+    }
+
+    output += `${p2}): Promise<${className}Model> {\n`;
 
     output += `${p4}const old${className} = await this.get${className}Detail(${variableName}Id);\n\n`;
 
     output += `${p4}let new${className};\n\n`;
 
-    const updatingOutput = '          ...input,\n';
+    const updatingOutput = `${p10}...input,\n`;
 
     output += `${p4}try {\n${p6}new${className} = await this.prisma.${variableName}.update({\n${p8}data: {\n`;
 
     output += updatingOutput;
 
-    output += `${p10}modifierId: me.id,\n${p8}},\n${p8}where: {\n${p10}id: ${variableName}Id,\n${p8}},\n${p6}});\n${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.UPDATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'update${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
+    output += `${p10}version: {\n${p12}increment: 1,\n${p10}},\n${p10}modifierId: me.id,\n${p8}},\n${p8}where: {\n${p10}id: ${variableName}Id,\n${p10}version: old${className}.version,\n${p8}},\n`;
+
+    if (relationCount) {
+      output += `${p8}include: include\n${p10}? {\n`;
+
+      const { o2o, o2m, m2o, m2m } = modelRelations[modelName];
+
+      for (const item of o2o) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of o2m) {
+        if (item.deepKey) {
+          output += `${p14}${item.key}: include.${item.key}\n${p16}? {\n${p20}include: {\n`;
+
+          output += item.deepKey.reduce((prev, curr) => {
+            return prev + `${p22}${curr}: true,\n`;
+          }, '');
+
+          output += `${p20}},\n${p20}where: {\n${p22}deletedAt: null,\n${p20}},\n${p18}}\n${p14}: false,\n`;
+        } else {
+          output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+        }
+      }
+
+      for (const item of m2o) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+
+      for (const item of m2m) {
+        output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
+      }
+      output += `${p12}}\n${p10}: null,\n`;
+    }
+
+    output += `${p6}});\n`;
+
+    output += `${p4}} catch (e) {\n${p6}Logger.error(e.message);\n${p6}throw new InternalServerErrorException(\n${p8}await this.i18n.t('general.INTERNAL_SERVER_ERROR', {\n${p10}args: {\n${p12}action: await this.i18n.t('db.UPDATE'),\n${p12}model: ${className}Service.moduleName,\n${p12}method: 'update${className}',\n${p12}msg: psmErrorMsg(e.code),\n${p10}},\n${p10}lang: I18nContext.current()?.lang,\n${p8}}),\n${p6});\n${p4}}\n\n`;
 
     if (this.ifLog) {
       output += `${p4}const changes = {};\n`;
@@ -365,45 +486,9 @@ export class ServiceGenerator extends FileGenerator {
     return output;
   }
 
-  private findDateProperties(): string[] {
-    const { properties } = this;
+  private calRelationCount(modelName: string): number {
+    const { o2o, o2m, m2o, m2m } = this.modelRelations[modelName];
 
-    const dates = [];
-    for (const property of properties) {
-      if (R.includes(property.key, ['deletedAt', 'createdAt', 'updatedAt'])) {
-        continue;
-      }
-      if (property.type === DataType.DateTime) {
-        dates.push(property.key);
-      }
-    }
-
-    if (dates.length) {
-      this.needTimeCheck = true;
-    }
-
-    return dates;
-  }
-
-  private writeDatesValidation(dates: string[]): {
-    excepts: string;
-    validation: string;
-    creation: string;
-  } {
-    let validation = ``;
-    let excepts = ``;
-    let creation = ``;
-
-    for (const item of dates) {
-      excepts += `${p6}${item},\n`;
-      validation += `${p4}if (!dayjs(${item}).isValid()) {\n${p6}throw new NotAcceptableException(\n${p8}await this.i18n.t('general.DATE_INVALID', {\n${p10}args: {\n${p12}date: ${item},\n${p10}},\n${p8}}),\n${p6});\n${p4}}\n`;
-      creation += `${p10}${item}: dayjs(${item}).toDate(),\n`;
-    }
-
-    return {
-      validation,
-      excepts,
-      creation,
-    };
+    return o2o.length + o2m.length + m2o.length + m2m.length;
   }
 }
