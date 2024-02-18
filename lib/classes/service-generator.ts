@@ -319,10 +319,7 @@ export class ServiceGenerator extends FileGenerator {
       for (const item of m2m) {
         output += `${p14}${item.key}: include.${item.key} ?? false,\n`;
       }
-      output += `${p12}}\n${p10}: null,\n
-      
-    const relationCount = this.calRelationCount(modelName);
-    `;
+      output += `${p12}}\n${p10}: null,\n`;
     }
 
     output += `${p6}});\n`;
